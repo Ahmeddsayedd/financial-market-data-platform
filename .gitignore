@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.coverage
+data/raw/
+data/processed/
+*.log
+.idea/
+.vscode/
+.DS_Store
