@@ -169,3 +169,10 @@ def test_parse_time_series_rejects_invalid_date():
 
     with pytest.raises(TwelveDataParseError):
         parse_time_series(payload, extracted_at=extracted_at)
+
+def test_parse_time_series_rejects_naive_extraction_timestamp():
+    payload = load_fixture("valid_time_series.json")
+    extracted_at = datetime(2026, 9, 26, 20, 30)
+
+    with pytest.raises(TwelveDataParseError):
+        parse_time_series(payload, extracted_at=extracted_at)

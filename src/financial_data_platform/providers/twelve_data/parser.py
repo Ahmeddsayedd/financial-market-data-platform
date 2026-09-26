@@ -16,6 +16,11 @@ def parse_time_series(
 ) -> list[MarketDataRecord]:
     """Convert a Twelve Data time-series response to canonical records."""
 
+    if extracted_at.tzinfo is None or extracted_at.utcoffset() is None:
+        raise TwelveDataParseError(
+            "extracted_at must be timezone-aware."
+    )
+
     values = payload.get("values")
     meta = payload.get("meta")
 
