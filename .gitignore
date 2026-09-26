@@ -11,3 +11,10 @@ data/processed/
 .idea/
 .vscode/
 .DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
