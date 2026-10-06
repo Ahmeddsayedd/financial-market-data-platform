@@ -9,6 +9,7 @@ description = "Cloud-native ETL pipeline for financial market analytics"
 requires-python = ">=3.11"
 dependencies = [
     "requests>=2.32,<3",
+    "pyarrow>=18,<19",
 ]
 
 [project.optional-dependencies]
