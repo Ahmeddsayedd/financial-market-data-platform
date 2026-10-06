@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pyarrow.parquet as pq
 import pyarrow as pa
+import pytest
 
 from financial_data_platform.models.market_data import MarketDataRecord
 from financial_data_platform.storage.silver import SilverWriter
@@ -327,3 +328,39 @@ def test_empty_input_writes_nothing(tmp_path):
 
     assert paths == []
     assert list(tmp_path.rglob("*.parquet")) == []
+
+
+
+@pytest.mark.parametrize(
+    "symbol",
+    [
+        "",
+        "../AAPL",
+        "AAPL/TEST",
+        r"AAPL\TEST",
+    ],
+)
+def test_rejects_unsafe_symbol_path_components(tmp_path, symbol):
+    record = MarketDataRecord(
+        symbol=symbol,
+        observation_date=date(2026, 10, 5),
+        open=Decimal("250.00"),
+        high=Decimal("255.00"),
+        low=Decimal("249.00"),
+        close=Decimal("254.00"),
+        volume=1_000_000,
+        source="twelve_data",
+        extracted_at=datetime(
+            2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
+        ),
+    )
+
+    writer = SilverWriter(tmp_path)
+
+    with pytest.raises(
+        ValueError,
+        match="symbol must be a safe path component",
+    ):
+        writer.write([record])
+
+    assert not list(tmp_path.rglob("*.parquet"))

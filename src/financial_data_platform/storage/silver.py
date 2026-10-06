@@ -25,6 +25,10 @@ SILVER_SCHEMA = pa.schema(
     ]
 )
 
+def _validate_symbol_path_component(symbol: str) -> None:
+    if not symbol or "/" in symbol or "\\" in symbol or ".." in symbol:
+        raise ValueError("symbol must be a safe path component")
+
 class SilverWriter:
     """Persist validated canonical market data to the Silver Parquet layer."""
 
@@ -32,6 +36,9 @@ class SilverWriter:
         self.base_dir = base_dir
 
     def write(self, records: list[MarketDataRecord]) -> list[Path]:
+        for record in records:
+            _validate_symbol_path_component(record.symbol)
+            
         partitions: dict[tuple[str, int], list[MarketDataRecord]] = defaultdict(list)
 
         for record in records:
