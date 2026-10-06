@@ -3,6 +3,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from collections import defaultdict
 from financial_data_platform.models.market_data import MarketDataRecord
 
 
@@ -31,18 +32,24 @@ class SilverWriter:
         self.base_dir = base_dir
 
     def write(self, records: list[MarketDataRecord]) -> list[Path]:
-        record = records[0]
+        partitions: dict[tuple[str, int], list[MarketDataRecord]] = defaultdict(list)
 
-        path = (
-            self.base_dir
-            / f"symbol={record.symbol}"
-            / f"year={record.observation_date.year}"
-            / "data.parquet"
-        )
-        path.parent.mkdir(parents=True, exist_ok=True)
+        for record in records:
+            partition_key = (record.symbol, record.observation_date.year)
+            partitions[partition_key].append(record)
 
-        table = pa.Table.from_pylist(
-            [
+        paths: list[Path] = []
+
+        for (symbol, year), partition_records in sorted(partitions.items()):
+            path = (
+                self.base_dir
+                / f"symbol={symbol}"
+                / f"year={year}"
+                / "data.parquet"
+            )
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            rows = [
                 {
                     "symbol": record.symbol,
                     "observation_date": record.observation_date,
@@ -54,10 +61,12 @@ class SilverWriter:
                     "source": record.source,
                     "extracted_at": record.extracted_at,
                 }
-            ],
-            schema=SILVER_SCHEMA,
-        )
+                for record in partition_records
+            ]
 
-        pq.write_table(table, path)
+            table = pa.Table.from_pylist(rows, schema=SILVER_SCHEMA)
 
-        return [path]
+            pq.write_table(table, path)
+            paths.append(path)
+
+        return paths
