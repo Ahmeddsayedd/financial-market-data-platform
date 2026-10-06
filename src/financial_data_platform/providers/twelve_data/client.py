@@ -77,6 +77,11 @@ class TwelveDataClient:
                     "Twelve Data returned invalid JSON."
                 ) from exc
 
+            if not isinstance(payload, dict):
+                raise TwelveDataClientError(
+                    "Twelve Data response must be a JSON object."
+                )
+
             if payload.get("status") == "error":
                 raise TwelveDataClientError(
                     "Twelve Data provider returned an error."

@@ -412,3 +412,23 @@ def test_fetch_daily_time_series_uses_exponential_backoff():
         call(1),
         call(2),
     ]
+
+
+def test_fetch_daily_time_series_rejects_non_object_json():
+    response = Mock()
+    response.status_code = 200
+    response.json.return_value = ["unexpected", "list"]
+
+    session = Mock()
+    session.get.return_value = response
+
+    client = TwelveDataClient(
+        api_key="test-key",
+        session=session,
+    )
+
+    with pytest.raises(
+        TwelveDataClientError,
+        match="JSON object",
+    ):
+        client.fetch_daily_time_series("AAPL")
