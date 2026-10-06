@@ -64,7 +64,30 @@ class SilverWriter:
                 for record in partition_records
             ]
 
-            table = pa.Table.from_pylist(rows, schema=SILVER_SCHEMA)
+            if path.exists():
+                existing_table = pq.ParquetFile(path).read()
+                existing_rows = existing_table.to_pylist()
+            else:
+                existing_rows = []
+
+            rows_by_identity = {
+                (row["symbol"], row["observation_date"]): row
+                for row in existing_rows
+            }
+
+            for row in rows:
+                identity = (row["symbol"], row["observation_date"])
+                rows_by_identity[identity] = row
+
+            merged_rows = sorted(
+                rows_by_identity.values(),
+                key=lambda row: (row["symbol"], row["observation_date"]),
+            )
+
+            table = pa.Table.from_pylist(
+                merged_rows,
+                schema=SILVER_SCHEMA,
+            )
 
             pq.write_table(table, path)
             paths.append(path)
