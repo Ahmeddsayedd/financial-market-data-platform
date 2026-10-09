@@ -23,3 +23,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: tests requiring external services such as PostgreSQL",
+]
