@@ -1,5 +1,10 @@
+import os
+import psycopg
 import subprocess
 import pytest
+from datetime import date, datetime, timezone
+from decimal import Decimal
+from dataclasses import replace
 from scripts.manage_migrations import (
     discover_migrations,
     migration_status,
@@ -8,7 +13,17 @@ from scripts.manage_migrations import (
     execute_postgres_migration,
     validate_migration_history,
 )
+from financial_data_platform.models.market_data import MarketDataRecord
+from financial_data_platform.storage.silver import SilverWriter
 from concurrent.futures import ThreadPoolExecutor
+from financial_data_platform.warehouse.db import connect_to_database
+from financial_data_platform.warehouse.gold_loader import (
+    ensure_asset,
+    ensure_date,
+    insert_market_fact,
+    load_market_records,
+    load_silver_file,
+)
 
 def run_test_sql(sql: str) -> subprocess.CompletedProcess[str]:
     """Execute SQL against the isolated PostgreSQL test database."""
@@ -837,3 +852,804 @@ def test_concurrent_migration_attempts_apply_once(tmp_path):
         )
 
         assert cleanup.returncode == 0, cleanup.stderr
+
+
+@pytest.mark.integration
+def test_gold_loader_connects_to_postgresql(monkeypatch):
+    """Connect to the isolated Gold warehouse test database."""
+
+    # Requires POSTGRES_PASSWORD in the test process environment.
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    with connect_to_database() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT current_database();")
+            database_name = cursor.fetchone()[0]
+
+    assert database_name == "financial_market_test"
+
+
+@pytest.mark.integration
+def test_ensure_asset_is_idempotent():
+    """Repeated asset loading must return the same key without duplicates."""
+
+    with connect_to_database() as connection:
+        with connection.cursor() as cursor:
+            try:
+                first_key = ensure_asset(
+                    cursor,
+                    source="integration_test",
+                    symbol="TEST_ASSET_23",
+                )
+
+                second_key = ensure_asset(
+                    cursor,
+                    source="integration_test",
+                    symbol="TEST_ASSET_23",
+                )
+
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM dim_asset
+                    WHERE source = %s AND symbol = %s;
+                    """,
+                    ("integration_test", "TEST_ASSET_23"),
+                )
+
+                count = cursor.fetchone()[0]
+
+                assert first_key == second_key
+                assert count == 1
+
+            finally:
+                connection.rollback()
+
+
+
+@pytest.mark.integration
+def test_ensure_date_is_idempotent(monkeypatch):
+    """Repeated date loading must not create duplicate calendar rows."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    with connect_to_database() as connection:
+        try:
+            with connection.cursor() as cursor:
+                first_key = ensure_date(cursor, date(2026, 10, 9))
+                second_key = ensure_date(cursor, date(2026, 10, 9))
+
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM dim_date
+                    WHERE date_key = %s;
+                    """,
+                    (20261009,),
+                )
+
+                count = cursor.fetchone()[0]
+
+                assert first_key == second_key == 20261009
+                assert count == 1
+
+        finally:
+            connection.rollback()
+
+
+@pytest.mark.integration
+def test_insert_market_fact_preserves_decimal_precision(monkeypatch):
+    """Insert an OHLCV fact without losing decimal precision."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    record = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.12345678"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.50000000"),
+        close=Decimal("253.87654321"),
+        volume=1234567,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    with connect_to_database() as connection:
+        try:
+            with connection.cursor() as cursor:
+                asset_key = ensure_asset(
+                    cursor,
+                    source=record.source,
+                    symbol=record.symbol,
+                )
+                ensure_date(cursor, record.observation_date)
+                insert_market_fact(cursor, record, asset_key)
+
+                cursor.execute(
+                    """
+                    SELECT open, high, low, close, volume, extracted_at
+                    FROM fact_market_metrics
+                    WHERE asset_key = %s AND date_key = %s;
+                    """,
+                    (asset_key, 20261009),
+                )
+
+                actual = cursor.fetchone()
+
+                assert actual == (
+                    record.open,
+                    record.high,
+                    record.low,
+                    record.close,
+                    record.volume,
+                    record.extracted_at,
+                )
+
+        finally:
+            connection.rollback()
+
+
+
+@pytest.mark.integration
+def test_identical_market_fact_retry_is_unchanged(monkeypatch):
+    """Loading an identical fact twice must not create a duplicate."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    record = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.12345678"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.50000000"),
+        close=Decimal("253.87654321"),
+        volume=1234567,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    with connect_to_database() as connection:
+        try:
+            with connection.cursor() as cursor:
+                asset_key = ensure_asset(
+                    cursor,
+                    source=record.source,
+                    symbol=record.symbol,
+                )
+                ensure_date(cursor, record.observation_date)
+
+                first_action = insert_market_fact(cursor, record, asset_key)
+                second_action = insert_market_fact(cursor, record, asset_key)
+
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM fact_market_metrics
+                    WHERE asset_key = %s AND date_key = %s;
+                    """,
+                    (asset_key, 20261009),
+                )
+
+                assert first_action == "insert"
+                assert second_action == "unchanged"
+                assert cursor.fetchone()[0] == 1
+
+        finally:
+            connection.rollback()
+
+
+
+@pytest.mark.integration
+def test_newer_market_fact_updates_existing_prices(monkeypatch):
+    """Newer corrected prices should update the existing Gold fact."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    original = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.00000000"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.00000000"),
+        close=Decimal("253.00000000"),
+        volume=1000000,
+        source="integration_test",
+        extracted_at=datetime(
+            2026, 10, 9, 18, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    corrected = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.00000000"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.00000000"),
+        close=Decimal("254.50000000"),
+        volume=1000000,
+        source="integration_test",
+        extracted_at=datetime(
+            2026, 10, 9, 19, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    with connect_to_database() as connection:
+        try:
+            with connection.cursor() as cursor:
+                asset_key = ensure_asset(
+                    cursor,
+                    source=original.source,
+                    symbol=original.symbol,
+                )
+                ensure_date(cursor, original.observation_date)
+
+                first_action = insert_market_fact(
+                    cursor, original, asset_key
+                )
+                second_action = insert_market_fact(
+                    cursor, corrected, asset_key
+                )
+
+                cursor.execute(
+                    """
+                    SELECT close, extracted_at
+                    FROM fact_market_metrics
+                    WHERE asset_key = %s AND date_key = %s;
+                    """,
+                    (asset_key, 20261009),
+                )
+
+                stored = cursor.fetchone()
+
+                assert first_action == "insert"
+                assert second_action == "update"
+                assert stored == (
+                    corrected.close,
+                    corrected.extracted_at,
+                )
+
+        finally:
+            connection.rollback()
+
+
+
+@pytest.mark.integration
+def test_older_market_fact_does_not_overwrite_newer_data(monkeypatch):
+    """An older extraction must not overwrite a newer Gold fact."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    newer = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.00000000"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.00000000"),
+        close=Decimal("254.50000000"),
+        volume=1000000,
+        source="integration_test",
+        extracted_at=datetime(
+            2026, 10, 9, 19, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    older = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.00000000"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.00000000"),
+        close=Decimal("253.00000000"),
+        volume=1000000,
+        source="integration_test",
+        extracted_at=datetime(
+            2026, 10, 9, 18, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    with connect_to_database() as connection:
+        try:
+            with connection.cursor() as cursor:
+                asset_key = ensure_asset(
+                    cursor,
+                    source=newer.source,
+                    symbol=newer.symbol,
+                )
+                ensure_date(cursor, newer.observation_date)
+
+                first_action = insert_market_fact(
+                    cursor, newer, asset_key
+                )
+                second_action = insert_market_fact(
+                    cursor, older, asset_key
+                )
+
+                cursor.execute(
+                    """
+                    SELECT close, extracted_at
+                    FROM fact_market_metrics
+                    WHERE asset_key = %s AND date_key = %s;
+                    """,
+                    (asset_key, 20261009),
+                )
+                stored = cursor.fetchone()
+
+                assert first_action == "insert"
+                assert second_action == "unchanged"
+                assert stored == (
+                    newer.close,
+                    newer.extracted_at,
+                )
+
+        finally:
+            connection.rollback()
+
+
+@pytest.mark.integration
+def test_equal_timestamp_conflict_rejects_changed_prices(monkeypatch):
+    """Reject conflicting prices with identical extraction timestamps."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    original = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.00000000"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.00000000"),
+        close=Decimal("253.00000000"),
+        volume=1000000,
+        source="integration_test",
+        extracted_at=datetime(
+            2026, 10, 9, 18, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    conflicting = MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("250.00000000"),
+        high=Decimal("255.00000000"),
+        low=Decimal("248.00000000"),
+        close=Decimal("254.50000000"),
+        volume=1000000,
+        source="integration_test",
+        extracted_at=original.extracted_at,
+    )
+
+    with connect_to_database() as connection:
+        try:
+            with connection.cursor() as cursor:
+                asset_key = ensure_asset(
+                    cursor,
+                    source=original.source,
+                    symbol=original.symbol,
+                )
+                ensure_date(cursor, original.observation_date)
+
+                first_action = insert_market_fact(
+                    cursor, original, asset_key
+                )
+                second_action = insert_market_fact(
+                    cursor, conflicting, asset_key
+                )
+
+                cursor.execute(
+                    """
+                    SELECT close, extracted_at
+                    FROM fact_market_metrics
+                    WHERE asset_key = %s AND date_key = %s;
+                    """,
+                    (asset_key, 20261009),
+                )
+
+                stored = cursor.fetchone()
+
+                assert first_action == "insert"
+                assert second_action == "reject"
+                assert stored == (
+                    original.close,
+                    original.extracted_at,
+                )
+
+        finally:
+            connection.rollback()
+
+
+@pytest.mark.integration
+def test_gold_batch_rolls_back_all_records_on_database_error(monkeypatch):
+    """An invalid fact must roll back earlier successful inserts."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    valid = MarketDataRecord(
+        symbol="ROLLBACK23",
+        observation_date=date(2026, 10, 8),
+        open=Decimal("100.00000000"),
+        high=Decimal("105.00000000"),
+        low=Decimal("98.00000000"),
+        close=Decimal("102.00000000"),
+        volume=1000,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    invalid = replace(
+        valid,
+        observation_date=date(2026, 10, 9),
+        volume=-1,
+    )
+
+    with pytest.raises(psycopg.errors.CheckViolation):
+        load_market_records([valid, invalid])
+
+    # Use a new connection to inspect the committed database state.
+    with connect_to_database() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT COUNT(*)
+                FROM dim_asset
+                WHERE source = %s AND symbol = %s;
+                """,
+                ("integration_test", "ROLLBACK23"),
+            )
+            assert cursor.fetchone()[0] == 0
+
+
+@pytest.mark.integration
+def test_gold_batch_commits_valid_market_records(monkeypatch):
+    """Commit valid records and report accurate insertion counts."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    first = MarketDataRecord(
+        symbol="BATCH23",
+        observation_date=date(2026, 10, 8),
+        open=Decimal("100.00000000"),
+        high=Decimal("105.00000000"),
+        low=Decimal("98.00000000"),
+        close=Decimal("102.00000000"),
+        volume=1000,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    second = replace(
+        first,
+        observation_date=date(2026, 10, 9),
+        close=Decimal("103.00000000"),
+    )
+
+    try:
+        counts = load_market_records([first, second])
+
+        assert counts == {
+            "inserted": 2,
+            "updated": 0,
+            "unchanged": 0,
+            "rejected": 0,
+        }
+
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM fact_market_metrics AS f
+                    JOIN dim_asset AS a
+                        ON a.asset_key = f.asset_key
+                    WHERE a.source = %s
+                      AND a.symbol = %s;
+                    """,
+                    ("integration_test", "BATCH23"),
+                )
+
+                assert cursor.fetchone()[0] == 2
+
+    finally:
+        # Remove only records belonging to this integration-test asset.
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM fact_market_metrics
+                    WHERE asset_key IN (
+                        SELECT asset_key
+                        FROM dim_asset
+                        WHERE source = %s AND symbol = %s
+                    );
+                    """,
+                    ("integration_test", "BATCH23"),
+                )
+
+                cursor.execute(
+                    """
+                    DELETE FROM dim_asset
+                    WHERE source = %s AND symbol = %s;
+                    """,
+                    ("integration_test", "BATCH23"),
+                )
+
+
+@pytest.mark.integration
+def test_gold_batch_retry_is_idempotent(monkeypatch):
+    """Retrying an identical batch must not duplicate Gold facts."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    first = MarketDataRecord(
+        symbol="RETRY23",
+        observation_date=date(2026, 10, 8),
+        open=Decimal("100.00000000"),
+        high=Decimal("105.00000000"),
+        low=Decimal("98.00000000"),
+        close=Decimal("102.00000000"),
+        volume=1000,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    second = replace(
+        first,
+        observation_date=date(2026, 10, 9),
+        close=Decimal("103.00000000"),
+    )
+
+    try:
+        first_counts = load_market_records([first, second])
+        retry_counts = load_market_records([first, second])
+
+        assert first_counts == {
+            "inserted": 2,
+            "updated": 0,
+            "unchanged": 0,
+            "rejected": 0,
+        }
+
+        assert retry_counts == {
+            "inserted": 0,
+            "updated": 0,
+            "unchanged": 2,
+            "rejected": 0,
+        }
+
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM fact_market_metrics AS f
+                    JOIN dim_asset AS a
+                        ON a.asset_key = f.asset_key
+                    WHERE a.source = %s
+                      AND a.symbol = %s;
+                    """,
+                    ("integration_test", "RETRY23"),
+                )
+
+                assert cursor.fetchone()[0] == 2
+
+    finally:
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM fact_market_metrics
+                    WHERE asset_key IN (
+                        SELECT asset_key
+                        FROM dim_asset
+                        WHERE source = %s AND symbol = %s
+                    );
+                    """,
+                    ("integration_test", "RETRY23"),
+                )
+
+                cursor.execute(
+                    """
+                    DELETE FROM dim_asset
+                    WHERE source = %s AND symbol = %s;
+                    """,
+                    ("integration_test", "RETRY23"),
+                )
+
+
+@pytest.mark.integration
+def test_gold_batch_newer_correction_updates_committed_fact(monkeypatch):
+    """A newer extraction updates a previously committed Gold fact."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    first = MarketDataRecord(
+        symbol="CORRECT23",
+        observation_date=date(2026, 10, 8),
+        open=Decimal("100.00000000"),
+        high=Decimal("105.00000000"),
+        low=Decimal("98.00000000"),
+        close=Decimal("102.00000000"),
+        volume=1000,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    second = replace(
+        first,
+        observation_date=date(2026, 10, 9),
+        close=Decimal("103.00000000"),
+    )
+
+    corrected = replace(
+        second,
+        close=Decimal("104.50000000"),
+        extracted_at=datetime(
+            2026, 10, 9, 19, 0, tzinfo=timezone.utc
+        ),
+    )
+
+    try:
+        first_counts = load_market_records([first, second])
+        correction_counts = load_market_records([corrected])
+
+        assert first_counts == {
+            "inserted": 2,
+            "updated": 0,
+            "unchanged": 0,
+            "rejected": 0,
+        }
+
+        assert correction_counts == {
+            "inserted": 0,
+            "updated": 1,
+            "unchanged": 0,
+            "rejected": 0,
+        }
+
+        conflicting = replace(
+            corrected,
+            close=Decimal("104.75000000"),
+        )
+
+        conflict_counts = load_market_records([conflicting])
+
+        assert conflict_counts == {
+            "inserted": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "rejected": 1,
+        }
+
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM fact_market_metrics AS f
+                    JOIN dim_asset AS a
+                        ON a.asset_key = f.asset_key
+                    WHERE a.source = %s
+                      AND a.symbol = %s;
+                    """,
+                    ("integration_test", "CORRECT23"),
+                )
+
+                assert cursor.fetchone()[0] == 2
+
+                cursor.execute(
+                    """
+                    SELECT f.close, f.extracted_at
+                    FROM fact_market_metrics AS f
+                    JOIN dim_asset AS a
+                        ON a.asset_key = f.asset_key
+                    WHERE a.source = %s
+                    AND a.symbol = %s
+                    AND f.date_key = %s;
+                    """,
+                    ("integration_test", "CORRECT23", 20261009),
+                )
+
+                stored_close, stored_extracted_at = cursor.fetchone()
+
+                assert stored_close == Decimal("104.50000000")
+                assert stored_extracted_at == datetime(
+                    2026, 10, 9, 19, 0, tzinfo=timezone.utc
+                )
+
+    finally:
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM fact_market_metrics
+                    WHERE asset_key IN (
+                        SELECT asset_key
+                        FROM dim_asset
+                        WHERE source = %s AND symbol = %s
+                    );
+                    """,
+                    ("integration_test", "CORRECT23"),
+                )
+
+                cursor.execute(
+                    """
+                    DELETE FROM dim_asset
+                    WHERE source = %s AND symbol = %s;
+                    """,
+                    ("integration_test", "CORRECT23"),
+                )
+
+
+
+@pytest.mark.integration
+def test_silver_parquet_file_loads_into_gold(monkeypatch, tmp_path):
+    """Load a real Silver Parquet file into the test Gold database."""
+
+    monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
+
+    record = MarketDataRecord(
+        symbol="PARQUET23",
+        observation_date=date(2026, 10, 9),
+        open=Decimal("100.00000000"),
+        high=Decimal("105.00000000"),
+        low=Decimal("98.00000000"),
+        close=Decimal("102.50000000"),
+        volume=1000,
+        source="integration_test",
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
+    )
+
+    writer = SilverWriter(base_dir=tmp_path)
+    parquet_paths = writer.write([record])
+
+    assert len(parquet_paths) == 1
+    parquet_path = parquet_paths[0]
+
+    try:
+        counts = load_silver_file(str(parquet_path))
+
+        assert counts == {
+            "inserted": 1,
+            "updated": 0,
+            "unchanged": 0,
+            "rejected": 0,
+        }
+
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT f.close
+                    FROM fact_market_metrics AS f
+                    JOIN dim_asset AS a
+                        ON a.asset_key = f.asset_key
+                    WHERE a.source = %s
+                      AND a.symbol = %s
+                      AND f.date_key = %s;
+                    """,
+                    ("integration_test", "PARQUET23", 20261009),
+                )
+
+                assert cursor.fetchone()[0] == Decimal("102.50000000")
+
+    finally:
+        with connect_to_database() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    DELETE FROM fact_market_metrics
+                    WHERE asset_key IN (
+                        SELECT asset_key
+                        FROM dim_asset
+                        WHERE source = %s AND symbol = %s
+                    );
+                    """,
+                    ("integration_test", "PARQUET23"),
+                )
+
+                cursor.execute(
+                    """
+                    DELETE FROM dim_asset
+                    WHERE source = %s AND symbol = %s;
+                    """,
+                    ("integration_test", "PARQUET23"),
+                )
