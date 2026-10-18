@@ -544,11 +544,12 @@ def test_migration_runner_reads_applied_migrations():
     applied = read_applied_migrations("financial_market_test")
     migrations = discover_migrations()
 
-    version, _, expected_checksum = migrations[0]
-
-    assert applied == {
-        version: expected_checksum,
+    expected_applied = {
+        version: checksum
+        for version, _, checksum in migrations
     }
+
+    assert applied == expected_applied
 
 
 @pytest.mark.integration
