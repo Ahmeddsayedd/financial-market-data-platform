@@ -18,7 +18,7 @@ from unittest.mock import Mock, patch
 def test_discovers_initial_gold_schema_migration():
     migrations = discover_migrations()
 
-    assert len(migrations) == 1
+    assert len(migrations) == 2
 
     version, path, checksum = migrations[0]
 
