@@ -1,0 +1,101 @@
+name: financial-market-airflow
+
+services:
+  airflow-postgres:
+    image: postgres:17
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB:?Required}
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER:?Required}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD:?Required}
+
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  airflow-init:
+    image: apache/airflow:3.1.7
+    command: db migrate
+    restart: "no"
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:?Required}:${AIRFLOW_POSTGRES_PASSWORD:?Required}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB:?Required}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?AIRFLOW_JWT_SECRET must be set}
+
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+
+  airflow-api-server:
+    image: apache/airflow:3.1.7
+    command: api-server
+    restart: unless-stopped
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:?Required}:${AIRFLOW_POSTGRES_PASSWORD:?Required}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB:?Required}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?AIRFLOW_JWT_SECRET must be set}
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/auth/passwords.json.generated
+
+    ports:
+      - "127.0.0.1:${AIRFLOW_PORT:-8080}:8080"
+
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+    volumes:
+      - ./airflow/logs:/opt/airflow/logs
+      - airflow_auth_data:/opt/airflow/auth
+
+  airflow-scheduler:
+    image: apache/airflow:3.1.7
+    command: scheduler
+    restart: unless-stopped
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:?Required}:${AIRFLOW_POSTGRES_PASSWORD:?Required}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB:?Required}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?AIRFLOW_JWT_SECRET must be set}
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+
+  airflow-dag-processor:
+    image: apache/airflow:3.1.7
+    command: dag-processor
+    restart: unless-stopped
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER:?Required}:${AIRFLOW_POSTGRES_PASSWORD:?Required}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB:?Required}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?AIRFLOW_JWT_SECRET must be set}
+
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+
+volumes:
+  airflow_postgres_data:
+  airflow_auth_data:
