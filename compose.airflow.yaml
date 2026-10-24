@@ -83,6 +83,8 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./src:/opt/financial-data/src:ro
       - ./data/raw:/opt/financial-data/raw
+      - ./data/silver:/opt/financial-data/silver
+      - ./data/quarantine:/opt/financial-data/quarantine
 
   airflow-dag-processor:
     image: apache/airflow:3.1.7
