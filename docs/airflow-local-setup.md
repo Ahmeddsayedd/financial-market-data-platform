@@ -244,3 +244,62 @@ The DAG was paused again after verification.
 This DAG is a demonstration of orchestration infrastructure, not a complete financial ETL implementation.
 
 Actual market-data extraction, Raw and Silver processing, Gold PostgreSQL loading, and financial indicator persistence will be integrated in subsequent issues.
+
+## Financial market ingestion
+
+The `financial_market_pipeline` DAG integrates the existing Twelve Data ingestion adapter with Apache Airflow. It currently supports controlled ingestion of **AAPL daily market data** into the project's Raw JSON storage layer.
+
+This milestone integrates Raw ingestion only. Silver transformations, Gold warehouse loading, and financial analytics are not yet connected to the Airflow DAG.
+
+### Safety controls
+
+Live Twelve Data ingestion requires two independent authorizations:
+
+1. The scheduler environment variable `ENABLE_TWELVE_DATA_INGESTION=true`.
+2. The individual DAG run configuration containing `"allow_live_ingestion": true` (JSON boolean).
+
+Both must be present. Otherwise, `ingest_raw_market_data` returns a disabled result without calling Twelve Data.
+
+The default environment value is `false`. The ingestion task also has **zero Airflow retries**, while the ingestion adapter initializes the API client with **zero internal retries**. This avoids automatic repeated requests after a failed ingestion attempt.
+
+**Keep the DAG paused and leave the environment flag disabled during normal development.** Unpausing the DAG can permit scheduled runs, which must remain unauthorized for live ingestion unless explicitly intended.
+
+### Raw storage
+
+The Airflow scheduler mounts the repository's `data/raw` directory at `/opt/financial-data/raw`. Successful ingestion writes JSON under:
+
+`data/raw/twelve_data/AAPL/YYYY/MM/DD/<timestamp>.json`
+
+Raw data is excluded from Git through `.gitignore`. API credentials must remain in the private `.env` file and must never appear in committed files, documentation examples, or logs.
+
+### Controlled verification
+
+The integration can be tested without making an API request:
+
+```bash
+docker cp scripts/test_airflow_ingestion_authorization.py \
+  financial-market-airflow-airflow-scheduler-1:/tmp/test_airflow_ingestion_authorization.py
+
+MSYS_NO_PATHCONV=1 docker compose -f compose.airflow.yaml exec \
+  airflow-scheduler python /tmp/test_airflow_ingestion_authorization.py
+```
+
+The test verifies all four combinations of the environment and DAG-run authorization flags. The ingestion adapter is mocked, including in the authorized case.
+
+Validate DAG loading separately:
+
+```bash
+docker compose -f compose.airflow.yaml exec \
+  airflow-dag-processor airflow dags list-import-errors
+```
+
+The expected result is `No data found`.
+
+A controlled live ingestion run requires available Twelve Data API quota and deliberate authorization. Do not enable live ingestion merely to validate DAG parsing or task dependencies.
+
+### Current milestone limitations
+
+- Only AAPL is configured for the Airflow ingestion task.
+- Live ingestion is opt-in rather than automatically scheduled.
+- Repeated authorized runs can write additional timestamped Raw JSON files.
+- Silver and Gold pipeline stages will be integrated in later milestones.

@@ -3,10 +3,12 @@
 Issue #31: Demonstrate task orchestration without accessing
 external financial APIs or modifying the Gold warehouse.
 """
+import os
+from pathlib import Path
 
 from datetime import datetime, timedelta, timezone
 
-from airflow.sdk import DAG, task # pyright: ignore[reportMissingImports]
+from airflow.sdk import DAG, get_current_context, task  # pyright: ignore[reportMissingImports]
 
 
 dag = DAG(
@@ -82,8 +84,56 @@ def summarize_pipeline_run(
     return summary
 
 
+@task(dag=dag, retries=0)
+def ingest_raw_market_data(
+    configuration: dict[str, str],
+) -> dict[str, object]:
+    """Optionally ingest one symbol into the Raw data layer.
+
+    Disabled by default to protect the Twelve Data free API quota.
+    """
+    if configuration["status"] != "configuration_valid":
+        raise ValueError("Pipeline configuration is invalid")
+
+    # Both environmental permission and explicit DAG-run authorization
+    # are required before any real Twelve Data request.
+    environment_enabled = (
+        os.getenv("ENABLE_TWELVE_DATA_INGESTION", "false").lower()
+        == "true"
+    )
+
+    context = get_current_context()
+    dag_run = context["dag_run"]
+    run_configuration = dag_run.conf or {}
+
+    run_authorized = (
+        run_configuration.get("allow_live_ingestion") is True
+    )
+
+    if not (environment_enabled and run_authorized):
+        print("Live Twelve Data ingestion disabled; no request sent.")
+        return {
+            "status": "disabled",
+            "provider": "twelve_data",
+            "symbols": [],
+            "files_written": 0,
+            "raw_paths": [],
+        }
+
+    # Imported only when live ingestion is explicitly enabled.
+    from financial_data_platform.orchestration.ingestion import (
+        ingest_market_symbols,
+    )
+
+    return ingest_market_symbols(
+        symbols=("AAPL",),
+        raw_base_dir=Path("/opt/financial-data/raw"),
+    )
+
+
 # TaskFlow automatically creates dependencies when one task's
 # output is passed as another task's argument.
 configuration = check_pipeline_configuration()
 prepared_run = prepare_pipeline_run(configuration)
 completion_summary = summarize_pipeline_run(prepared_run)
+raw_ingestion = ingest_raw_market_data(configuration)
