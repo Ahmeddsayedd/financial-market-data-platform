@@ -10,6 +10,10 @@ from datetime import datetime, timedelta, timezone
 
 from airflow.sdk import DAG, get_current_context, task  # pyright: ignore[reportMissingImports]
 
+from financial_data_platform.orchestration.airflow_tracking import (
+    on_airflow_failure,
+    on_airflow_success,
+)
 
 dag = DAG(
     dag_id="financial_market_pipeline",
@@ -24,8 +28,29 @@ dag = DAG(
     },
     max_active_runs=1,
     tags=["financial-market", "development"],
+    on_success_callback=on_airflow_success,
+    on_failure_callback=on_airflow_failure,
 )
 
+
+@task(dag=dag, retries=0)
+def start_execution_tracking() -> str:
+    """Persist the start of this Airflow DAG run."""
+    from financial_data_platform.orchestration.execution_tracking import (
+        start_pipeline_tracking,
+    )
+
+    context = get_current_context()
+    dag_run = context["dag_run"]
+
+    run_id = start_pipeline_tracking(
+        dag_id=dag_run.dag_id,
+        airflow_run_id=dag_run.run_id,
+        started_at=datetime.now(timezone.utc),
+    )
+
+    print(f"Execution tracking initialized: {run_id}")
+    return str(run_id)
 
 @task(dag=dag)
 def check_pipeline_configuration() -> dict[str, str]:
@@ -181,12 +206,27 @@ def process_raw_to_silver(
             "quarantine_paths": [],
         }
 
-    return process_raw_file_to_silver(
+    result = process_raw_file_to_silver(
         raw_relative_path=selected_path,
         raw_base_dir=raw_base_dir,
         silver_base_dir=Path("/opt/financial-data/silver"),
         quarantine_base_dir=Path("/opt/financial-data/quarantine"),
     )
+
+    from financial_data_platform.orchestration.execution_tracking import (
+        build_pipeline_counters,
+        update_pipeline_tracking_counters,
+    )
+
+    dag_run = context["dag_run"]
+
+    update_pipeline_tracking_counters(
+        dag_id=dag_run.dag_id,
+        airflow_run_id=dag_run.run_id,
+        counters=build_pipeline_counters(silver_result=result),
+    )
+
+    return result
 
 @task(dag=dag, retries=0)
 def load_silver_to_gold(
@@ -261,14 +301,34 @@ def load_silver_to_gold(
         load_silver_paths_to_gold,
     )
 
-    return load_silver_paths_to_gold(
+    result = load_silver_paths_to_gold(
         relative_paths=selected_paths,
         silver_base_dir=silver_root,
     )
 
+    from financial_data_platform.orchestration.execution_tracking import (
+        build_pipeline_counters,
+        update_pipeline_tracking_counters,
+    )
+
+    dag_run = context["dag_run"]
+
+    update_pipeline_tracking_counters(
+        dag_id=dag_run.dag_id,
+        airflow_run_id=dag_run.run_id,
+        counters=build_pipeline_counters(
+            silver_result=silver_result,
+            gold_result=result,
+        ),
+    )
+
+    return result
+
 # TaskFlow automatically creates dependencies when one task's
 # output is passed as another task's argument.
+tracking_start = start_execution_tracking()
 configuration = check_pipeline_configuration()
+tracking_start >> configuration
 prepared_run = prepare_pipeline_run(configuration)
 completion_summary = summarize_pipeline_run(prepared_run)
 raw_ingestion = ingest_raw_market_data(configuration)

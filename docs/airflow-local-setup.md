@@ -431,3 +431,86 @@ During integration verification:
 The DAG orchestrates Raw ingestion, Raw-to-Silver processing, and Silver-to-Gold loading. Live ingestion and Gold writes remain explicitly gated.
 
 The project does not yet run unattended production ingestion or loading. Dashboard integration, cloud deployment, and production scheduling remain separate milestones.
+
+## Airflow execution tracking and observability
+
+The `financial_market_pipeline` DAG persists execution metadata in the PostgreSQL `pipeline_run` table.
+
+### Execution lifecycle
+
+The `start_execution_tracking` task creates a tracking row with:
+
+- A deterministic UUID derived from the Airflow DAG ID and run ID.
+- The execution start timestamp.
+- An initial status of `running`.
+
+DAG-level success and failure callbacks finalize the record with the execution outcome, finish timestamp, and elapsed duration.
+
+Initialization and completion operations are designed to tolerate repeated calls without creating duplicate tracking rows.
+
+### Processing metrics
+
+Completed processing stages persist metric snapshots:
+
+| Column | Meaning |
+|---|---|
+| `records_extracted` | Observations read from the Raw response during Silver processing |
+| `records_validated` | Valid records accepted for transformation |
+| `records_transformed` | Valid records processed into Silver |
+| `records_loaded` | Gold facts inserted or updated |
+| `records_rejected` | Records rejected during Silver validation or Gold loading |
+
+Unchanged Gold facts are not counted as newly loaded records.
+
+Metrics are written as snapshots to avoid double-counting during task retries. DAG completion callbacks preserve previously recorded counts.
+
+For disabled processing stages, no activity is claimed.
+
+### Development safeguards
+
+Tracking writes are restricted to `financial_market_test`.
+
+Live Twelve Data ingestion and Gold market-data loading remain independently gated by their existing authorization controls.
+
+Execution tracking does not authorize ingestion or Gold market-data writes.
+
+### Verified behavior
+
+Controlled Airflow tests confirmed:
+
+- Successful DAG executions are recorded as `success`.
+- Failed DAG executions are recorded as `failed`.
+- Start times, finish times, and durations are persisted.
+- An offline AAPL processing run recorded 30 extracted, 30 validated, and 30 transformed observations.
+- With Gold loading disabled, that run correctly recorded zero newly loaded records.
+- Previously persisted processing counts survived the DAG success callback.
+
+### Inspect execution history
+
+Query the test database:
+
+```sql
+SELECT
+    run_id,
+    dag_id,
+    status,
+    started_at,
+    finished_at,
+    duration_seconds,
+    records_extracted,
+    records_validated,
+    records_transformed,
+    records_loaded,
+    records_rejected
+FROM pipeline_run
+ORDER BY started_at DESC
+LIMIT 10;
+```
+
+### Operational limitations
+
+- Execution tracking currently targets the isolated development test database.
+- Database metric updates are separate transactions from Silver file writes and Gold market-data loading.
+- Callback execution failures should be investigated in Airflow DAG processor logs.
+- Manually changing DAG run states in the Airflow UI does not provide the same callback guarantees as normal DAG execution.
+- Production alerting, centralized monitoring, and cloud deployment remain future work.
