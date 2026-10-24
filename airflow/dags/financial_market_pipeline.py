@@ -188,6 +188,84 @@ def process_raw_to_silver(
         quarantine_base_dir=Path("/opt/financial-data/quarantine"),
     )
 
+@task(dag=dag, retries=0)
+def load_silver_to_gold(
+    silver_result: dict[str, object],
+) -> dict[str, object]:
+    """Load selected Silver partitions into the test Gold warehouse."""
+
+    context = get_current_context()
+    run_configuration = context["dag_run"].conf or {}
+
+    environment_enabled = (
+        os.getenv("ENABLE_GOLD_LOADING", "false").lower() == "true"
+    )
+    run_authorized = run_configuration.get("allow_gold_loading") is True
+
+    if not (environment_enabled and run_authorized):
+        print("Gold loading disabled; no database write attempted.")
+        return {
+            "status": "disabled",
+            "files_loaded": 0,
+            "records_read": 0,
+        }
+
+    # Additional development safeguard: never write to the main
+    # Gold database during Issue #37.
+    if os.getenv("POSTGRES_DB") != "financial_market_test":
+        raise ValueError(
+            "Gold loading is restricted to financial_market_test"
+        )
+
+    silver_root = Path("/opt/financial-data/silver")
+
+    explicit_paths = run_configuration.get("silver_relative_paths")
+
+    if explicit_paths is not None:
+        if (
+            not isinstance(explicit_paths, list)
+            or not explicit_paths
+            or not all(
+                isinstance(path, str) and path
+                for path in explicit_paths
+            )
+        ):
+            raise ValueError(
+                "silver_relative_paths must be a nonempty list of strings"
+            )
+
+        selected_paths = explicit_paths
+
+    elif silver_result["status"] == "success":
+        absolute_paths = silver_result["silver_paths"]
+
+        if not isinstance(absolute_paths, list) or not absolute_paths:
+            raise ValueError(
+                "Successful Silver processing must provide output paths"
+            )
+
+        selected_paths = [
+            str(Path(path).relative_to(silver_root))
+            for path in absolute_paths
+        ]
+
+    else:
+        print("Gold loading disabled: no Silver file selected.")
+        return {
+            "status": "disabled",
+            "files_loaded": 0,
+            "records_read": 0,
+        }
+
+    from financial_data_platform.orchestration.gold import (
+        load_silver_paths_to_gold,
+    )
+
+    return load_silver_paths_to_gold(
+        relative_paths=selected_paths,
+        silver_base_dir=silver_root,
+    )
+
 # TaskFlow automatically creates dependencies when one task's
 # output is passed as another task's argument.
 configuration = check_pipeline_configuration()
@@ -195,3 +273,4 @@ prepared_run = prepare_pipeline_run(configuration)
 completion_summary = summarize_pipeline_run(prepared_run)
 raw_ingestion = ingest_raw_market_data(configuration)
 silver_processing = process_raw_to_silver(raw_ingestion)
+gold_loading = load_silver_to_gold(silver_processing)

@@ -80,14 +80,16 @@ def test_gold_rejects_negative_trading_volume():
         BEGIN;
 
         INSERT INTO dim_asset (source, symbol)
-        VALUES ('twelve_data', 'AAPL');
+        VALUES ('twelve_data', 'AAPL')
+        ON CONFLICT (source, symbol) DO NOTHING;
 
         INSERT INTO dim_date (
             date_key, full_date, day, month, quarter, year, day_of_week
         )
         VALUES (
             20261005, '2026-10-05', 5, 10, 4, 2026, 1
-        );
+        )
+        ON CONFLICT (date_key) DO NOTHING;
 
         INSERT INTO fact_market_metrics (
             asset_key,
@@ -131,12 +133,14 @@ def test_gold_rejects_duplicate_daily_market_facts():
         BEGIN;
 
         INSERT INTO dim_asset (source, symbol)
-        VALUES ('test_provider', 'DUPLICATE_TEST');
+        VALUES ('test_provider', 'DUPLICATE_TEST')
+        ON CONFLICT (source, symbol) DO NOTHING;
 
         INSERT INTO dim_date (
             date_key, full_date, day, month, quarter, year, day_of_week
         )
-        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1);
+        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1)
+        ON CONFLICT (date_key) DO NOTHING;
 
         INSERT INTO fact_market_metrics (
             asset_key, date_key,
@@ -183,7 +187,8 @@ def test_gold_rejects_fact_with_unknown_asset():
         INSERT INTO dim_date (
             date_key, full_date, day, month, quarter, year, day_of_week
         )
-        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1);
+        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1)
+        ON CONFLICT (date_key) DO NOTHING;
 
         INSERT INTO fact_market_metrics (
             asset_key,
@@ -223,12 +228,14 @@ def test_gold_rejects_close_above_daily_high():
         BEGIN;
 
         INSERT INTO dim_asset (source, symbol)
-        VALUES ('test_provider', 'PRICE_TEST');
+        VALUES ('test_provider', 'PRICE_TEST')
+        ON CONFLICT (source, symbol) DO NOTHING;
 
         INSERT INTO dim_date (
             date_key, full_date, day, month, quarter, year, day_of_week
         )
-        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1);
+        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1)
+        ON CONFLICT (date_key) DO NOTHING;
 
         INSERT INTO fact_market_metrics (
             asset_key,
@@ -284,12 +291,14 @@ def test_gold_rejects_invalid_ohlc_values(
         BEGIN;
 
         INSERT INTO dim_asset (source, symbol)
-        VALUES ('test_provider', 'OHLC_TEST');
+        VALUES ('test_provider', 'OHLC_TEST')
+        ON CONFLICT (source, symbol) DO NOTHING;
 
         INSERT INTO dim_date (
             date_key, full_date, day, month, quarter, year, day_of_week
         )
-        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1);
+        VALUES (20261005, '2026-10-05', 5, 10, 4, 2026, 1)
+        ON CONFLICT (date_key) DO NOTHING;
 
         INSERT INTO fact_market_metrics (
             asset_key, date_key,

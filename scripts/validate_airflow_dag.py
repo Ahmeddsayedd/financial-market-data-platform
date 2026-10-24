@@ -16,14 +16,11 @@ EXPECTED_DEPENDENCIES = {
         "prepare_pipeline_run",
         "ingest_raw_market_data",
     },
-    "prepare_pipeline_run": {
-        "summarize_pipeline_run",
-    },
+    "prepare_pipeline_run": {"summarize_pipeline_run"},
     "summarize_pipeline_run": set(),
-    "ingest_raw_market_data": {
-        "process_raw_to_silver",
-    },
-    "process_raw_to_silver": set(),
+    "ingest_raw_market_data": {"process_raw_to_silver"},
+    "process_raw_to_silver": {"load_silver_to_gold"},
+    "load_silver_to_gold": set(),
 }
 
 
@@ -56,7 +53,7 @@ def main() -> None:
     assert ingestion_task.retries == 0
 
     print("PASS: DAG imports successfully")
-    print("PASS: All five tasks are registered")
+    print("PASS: All six tasks are registered")
     print("PASS: Task dependency chain is correct")
     print("PASS: UTC start date, catchup, and paused defaults")
 

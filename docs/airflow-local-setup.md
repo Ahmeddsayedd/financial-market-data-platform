@@ -366,3 +366,68 @@ MSYS_NO_PATHCONV=1 docker compose -f compose.airflow.yaml exec \
 ```
 
 This milestone stops at the Silver layer. Loading the transformed data into the Gold PostgreSQL warehouse will be implemented separately.
+
+## Silver-to-Gold Airflow orchestration
+
+The `financial_market_pipeline` DAG includes `load_silver_to_gold` as its sixth task, downstream of `process_raw_to_silver`.
+
+The task reuses the existing Gold warehouse loader to read validated Silver Parquet files and persist financial market observations into PostgreSQL.
+
+### Database configuration
+
+The Airflow scheduler connects to the Gold PostgreSQL container through the external Docker network `financial-market-shared`.
+
+For Issue #37, Gold loading is restricted to the `financial_market_test` database. The scheduler receives its database credentials through environment variables configured in the private `.env` file.
+
+The custom Airflow runtime in `Dockerfile.airflow` includes Psycopg 3, which is required by the project's warehouse connection module.
+
+### Gold loading authorization
+
+Database writes require both:
+
+- `ENABLE_GOLD_LOADING=true` in the scheduler environment.
+- `"allow_gold_loading": true` in the individual DAG run configuration.
+
+The task additionally checks that `POSTGRES_DB` is `financial_market_test` before calling the Gold adapter.
+
+Gold loading is disabled by default. Keep `ENABLE_GOLD_LOADING=false` during normal development.
+
+### Controlled offline execution
+
+An existing Raw JSON file and Silver Parquet partition can be processed without contacting Twelve Data.
+
+Example manual DAG run configuration:
+
+```json
+{
+  "allow_live_ingestion": false,
+  "allow_gold_loading": true,
+  "raw_relative_path": "twelve_data/AAPL/2026/10/24/20261024T160953206116Z.json",
+  "silver_relative_paths": [
+    "symbol=AAPL/year=2026/data.parquet"
+  ]
+}
+```
+
+This configuration permits a Gold write only while the environment-level Gold loading switch is also enabled.
+
+After a controlled test, pause the DAG, restore `ENABLE_GOLD_LOADING=false`, and recreate the scheduler so that the updated environment takes effect.
+
+### Transactional loading and repeated execution
+
+The orchestration adapter validates the selected Silver paths and reads the Parquet records before invoking the existing Gold loader.
+
+Selected records are loaded through one PostgreSQL transaction. The existing loader manages commits, rollbacks, and duplicate/conflict handling.
+
+During integration verification:
+
+- The first load inserted 30 AAPL observations.
+- Repeating the load inserted zero additional records and reported 30 unchanged observations.
+- The subsequent authorized Airflow task processed 30 records and reported 30 unchanged observations.
+- No market observations were rejected during these checks.
+
+### Current scope
+
+The DAG orchestrates Raw ingestion, Raw-to-Silver processing, and Silver-to-Gold loading. Live ingestion and Gold writes remain explicitly gated.
+
+The project does not yet run unattended production ingestion or loading. Dashboard integration, cloud deployment, and production scheduling remain separate milestones.

@@ -60,9 +60,16 @@ services:
       - airflow_auth_data:/opt/airflow/auth
 
   airflow-scheduler:
-    image: apache/airflow:3.1.7
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: financial-market-airflow-runtime:local
     command: scheduler
     restart: unless-stopped
+
+    networks:
+      - default
+      - shared
 
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -73,6 +80,12 @@ services:
       ENABLE_TWELVE_DATA_INGESTION: ${ENABLE_TWELVE_DATA_INGESTION:-false}
       TWELVE_DATA_API_KEY: ${TWELVE_DATA_API_KEY:-}
       AIRFLOW__CORE__PARALLELISM: "2"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: financial_market_test
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      ENABLE_GOLD_LOADING: ${ENABLE_GOLD_LOADING:-false}
 
     depends_on:
       airflow-init:
@@ -109,3 +122,8 @@ services:
 volumes:
   airflow_postgres_data:
   airflow_auth_data:
+
+networks:
+  shared:
+    external: true
+    name: financial-market-shared
