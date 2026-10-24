@@ -303,3 +303,66 @@ A controlled live ingestion run requires available Twelve Data API quota and del
 - Live ingestion is opt-in rather than automatically scheduled.
 - Repeated authorized runs can write additional timestamped Raw JSON files.
 - Silver and Gold pipeline stages will be integrated in later milestones.
+
+## Raw-to-Silver orchestration
+
+The `financial_market_pipeline` DAG includes a `process_raw_to_silver` task after `ingest_raw_market_data`.
+
+The task reuses the existing market-data processing implementation to read a preserved Twelve Data JSON response, parse canonical records, validate financial observations, write valid records to partitioned Silver Parquet, and preserve invalid records in quarantine.
+
+### Offline replay
+
+Raw-to-Silver processing can run without requesting new market data.
+
+Trigger the DAG manually with a run configuration containing an existing Raw file path relative to `data/raw`:
+
+```json
+{
+  "raw_relative_path": "twelve_data/AAPL/2026/10/24/20261024T160953206116Z.json",
+  "allow_live_ingestion": false
+}
+```
+
+Replace the example path with a Raw file that exists locally.
+
+Keep `ENABLE_TWELVE_DATA_INGESTION=false` to prevent live ingestion.
+
+The ingestion task returns a disabled result, while `process_raw_to_silver` uses the explicitly selected Raw file.
+
+If no Raw file is selected and ingestion is disabled, the processing task returns a disabled result without writing Silver data.
+
+### Output storage
+
+Valid observations are stored in partitioned Parquet files under:
+
+`data/silver/symbol=<SYMBOL>/year=<YEAR>/data.parquet`
+
+Invalid observations are written as JSON quarantine records under `data/quarantine`.
+
+Both directories are mounted into the Airflow scheduler container.
+
+The existing Silver writer merges observations by symbol and observation date, allowing a repeated Raw file to be processed without accumulating duplicate observations for the same dates.
+
+### Validation and failure behavior
+
+Malformed JSON or structurally invalid provider responses cause processing to fail.
+
+Market observations that can be parsed but violate existing financial validation rules are preserved in quarantine.
+
+The task has zero Airflow retries to avoid automatic repeated processing. Silver and quarantine output files remain available for inspection.
+
+### Verification
+
+The offline AAPL replay was verified with 30 Silver observations representing 30 unique dates and zero quarantined records.
+
+Behavioral task checks can be run inside the Airflow scheduler using:
+
+```bash
+docker cp scripts/test_airflow_silver_task.py \
+  financial-market-airflow-airflow-scheduler-1:/tmp/test_airflow_silver_task.py
+
+MSYS_NO_PATHCONV=1 docker compose -f compose.airflow.yaml exec \
+  airflow-scheduler python /tmp/test_airflow_silver_task.py
+```
+
+This milestone stops at the Silver layer. Loading the transformed data into the Gold PostgreSQL warehouse will be implemented separately.

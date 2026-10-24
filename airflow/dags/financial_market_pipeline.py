@@ -130,6 +130,63 @@ def ingest_raw_market_data(
         raw_base_dir=Path("/opt/financial-data/raw"),
     )
 
+@task(dag=dag, retries=0)
+def process_raw_to_silver(
+    ingestion_result: dict[str, object],
+) -> dict[str, object]:
+    """Transform one explicitly selected Raw file into Silver Parquet.
+
+    Can use a file produced by this DAG run or an existing Raw file
+    selected through DAG run configuration. No API call occurs here.
+    """
+    from financial_data_platform.orchestration.silver import (
+        process_raw_file_to_silver,
+    )
+
+    raw_base_dir = Path("/opt/financial-data/raw")
+
+    context = get_current_context()
+    run_configuration = context["dag_run"].conf or {}
+
+    explicit_path = run_configuration.get("raw_relative_path")
+
+    if explicit_path is not None:
+        if not isinstance(explicit_path, str) or not explicit_path:
+            raise ValueError(
+                "raw_relative_path must be a nonempty string"
+            )
+        selected_path = explicit_path
+    elif ingestion_result["status"] == "success":
+        raw_paths = ingestion_result["raw_paths"]
+
+        if not isinstance(raw_paths, list) or len(raw_paths) != 1:
+            raise ValueError(
+                "Exactly one ingested Raw path is required"
+            )
+
+        selected_path = str(
+            Path(raw_paths[0]).relative_to(raw_base_dir)
+        )
+    else:
+        print(
+            "Raw-to-Silver processing disabled: "
+            "no Raw file was selected."
+        )
+        return {
+            "status": "disabled",
+            "total_records": 0,
+            "valid_count": 0,
+            "invalid_count": 0,
+            "silver_paths": [],
+            "quarantine_paths": [],
+        }
+
+    return process_raw_file_to_silver(
+        raw_relative_path=selected_path,
+        raw_base_dir=raw_base_dir,
+        silver_base_dir=Path("/opt/financial-data/silver"),
+        quarantine_base_dir=Path("/opt/financial-data/quarantine"),
+    )
 
 # TaskFlow automatically creates dependencies when one task's
 # output is passed as another task's argument.
@@ -137,3 +194,4 @@ configuration = check_pipeline_configuration()
 prepared_run = prepare_pipeline_run(configuration)
 completion_summary = summarize_pipeline_run(prepared_run)
 raw_ingestion = ingest_raw_market_data(configuration)
+silver_processing = process_raw_to_silver(raw_ingestion)

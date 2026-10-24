@@ -6,6 +6,8 @@ __pycache__/
 .pytest_cache/
 .coverage
 data/raw/
+data/silver/
+data/quarantine/
 data/processed/
 *.log
 .idea/
