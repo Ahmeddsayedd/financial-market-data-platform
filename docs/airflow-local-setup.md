@@ -161,3 +161,86 @@ The integration tests require the separate Gold PostgreSQL container and its tes
 ## Scope
 
 This setup establishes local Airflow infrastructure only. Financial ingestion, Silver processing, Gold loading, and indicator calculation will be connected to Airflow DAGs in subsequent issues.
+
+## First Financial Market DAG
+
+Issue #31 introduces the first demonstration workflow:
+
+`airflow/dags/financial_market_pipeline.py`
+
+**DAG ID:** `financial_market_pipeline`
+
+The workflow demonstrates Airflow task orchestration without calling financial APIs or modifying Raw, Silver, or Gold datasets.
+
+### Workflow
+
+The DAG contains three sequential TaskFlow tasks:
+
+1. `check_pipeline_configuration` — validates static, non-sensitive pipeline settings.
+2. `prepare_pipeline_run` — prepares deterministic demonstration run metadata.
+3. `summarize_pipeline_run` — validates the prepared metadata and returns a completion summary.
+
+The TaskFlow API connects these tasks by passing each task's output to the next task.
+
+### Scheduling and Safety
+
+- Daily schedule: `@daily`
+- UTC-aware start date
+- Historical catchup disabled
+- Paused by default
+- Maximum one active DAG run
+- One retry per failed task
+
+The DAG does not use Twelve Data API credentials or connect to the financial Gold warehouse.
+
+### Run the DAG Locally
+
+1. Start the Airflow environment using the instructions above.
+2. Open `http://localhost:8080`.
+3. Open `financial_market_pipeline`.
+4. Trigger a single manual run.
+5. If the run remains queued while the DAG is paused, temporarily unpause it.
+6. Inspect the run and its task instances.
+7. Pause the DAG again after verification to prevent further scheduled runs.
+
+When the DAG is unpaused, Airflow may also create an eligible scheduled run.
+
+A successful execution shows all three task instances in the `success` state.
+
+### Automated Validation
+
+Run the lightweight repository tests:
+
+```bash
+python scripts/run_tests.py tests/unit/test_first_airflow_dag.py
+```
+
+To validate the actual DAG structure with Airflow, copy the validation script into the running DAG processor container:
+
+```bash
+docker cp scripts/validate_airflow_dag.py financial-market-airflow-airflow-dag-processor-1:/tmp/validate_airflow_dag.py
+```
+
+Then execute it:
+
+```bash
+MSYS_NO_PATHCONV=1 docker compose -f compose.airflow.yaml exec airflow-dag-processor python /tmp/validate_airflow_dag.py
+```
+
+The runtime validator checks DAG imports, registered tasks, dependency relationships, the UTC-aware start date, and scheduling safeguards.
+
+The `MSYS_NO_PATHCONV=1` prefix prevents Windows Git Bash from rewriting the container's Linux file path.
+
+### Verified Local Execution
+
+During Issue #31 development, two DAG runs completed successfully: one manually triggered run and one scheduled run.
+
+All six task instances succeeded, demonstrating that the three tasks execute in the correct dependency order.
+
+The DAG was paused again after verification.
+
+### Limitations
+
+This DAG is a demonstration of orchestration infrastructure, not a complete financial ETL implementation.
+
+Actual market-data extraction, Raw and Silver processing, Gold PostgreSQL loading, and financial indicator persistence will be integrated in subsequent issues.
