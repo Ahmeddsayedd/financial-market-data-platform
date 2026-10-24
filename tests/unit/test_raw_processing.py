@@ -396,3 +396,141 @@ def test_reprocessing_invalid_raw_file_does_not_duplicate_quarantine(
     assert quarantine_files[0] == first_result.quarantine_paths[0]
 
     assert list((tmp_path / "silver").rglob("*.parquet")) == []
+
+
+def test_duplicate_raw_dates_produce_no_silver_or_quarantine(
+    tmp_path,
+):
+    """Ambiguous provider batches fail before any storage writes."""
+    raw_path = tmp_path / "raw" / "duplicates.json"
+    raw_path.parent.mkdir(parents=True)
+
+    observation = {
+        "datetime": "2026-10-05",
+        "open": "250.00",
+        "high": "255.00",
+        "low": "249.00",
+        "close": "254.00",
+        "volume": "1000000",
+    }
+
+    payload = {
+        "meta": {"symbol": "AAPL"},
+        "values": [observation, dict(observation)],
+    }
+
+    raw_path.write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        TwelveDataParseError,
+        match="Duplicate observation date",
+    ):
+        process_raw_market_data(
+            raw_path=raw_path,
+            silver_writer=SilverWriter(tmp_path / "silver"),
+            quarantine_writer=QuarantineWriter(
+                tmp_path / "quarantine"
+            ),
+            extracted_at=datetime(
+                2026, 10, 6, tzinfo=timezone.utc
+            ),
+            detected_at=datetime(
+                2026, 10, 6, 1, tzinfo=timezone.utc
+            ),
+        )
+
+    assert list((tmp_path / "silver").rglob("*.parquet")) == []
+    assert list((tmp_path / "quarantine").rglob("*.json")) == []
+
+
+@pytest.mark.parametrize(
+    "invalid_close, expected_code",
+    [
+        ("NaN", "NON_FINITE_CLOSE"),
+        ("Infinity", "NON_FINITE_CLOSE"),
+        ("-Infinity", "NON_FINITE_CLOSE"),
+    ],
+)
+def test_non_finite_price_is_quarantined_without_losing_valid_data(
+    tmp_path,
+    invalid_close,
+    expected_code,
+):
+    """Invalid prices go to quarantine while valid rows reach Silver."""
+    raw_path = tmp_path / "raw" / "mixed_quality.json"
+    raw_path.parent.mkdir(parents=True)
+
+    payload = {
+        "meta": {"symbol": "AAPL"},
+        "values": [
+            {
+                "datetime": "2026-10-05",
+                "open": "250.00",
+                "high": "255.00",
+                "low": "249.00",
+                "close": "254.00",
+                "volume": "1000000",
+            },
+            {
+                "datetime": "2026-10-06",
+                "open": "250.00",
+                "high": "255.00",
+                "low": "249.00",
+                "close": invalid_close,
+                "volume": "1000000",
+            },
+        ],
+    }
+
+    raw_path.write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    result = process_raw_market_data(
+        raw_path=raw_path,
+        silver_writer=SilverWriter(tmp_path / "silver"),
+        quarantine_writer=QuarantineWriter(tmp_path / "quarantine"),
+        extracted_at=datetime(2026, 10, 7, tzinfo=timezone.utc),
+        detected_at=datetime(2026, 10, 7, 1, tzinfo=timezone.utc),
+    )
+
+    assert result.total_records == 2
+    assert result.valid_count == 1
+    assert result.invalid_count == 1
+
+    assert len(result.silver_paths) == 1
+    assert len(result.quarantine_paths) == 1
+
+    # Only the valid observation is written to Silver.
+    silver_table = pq.ParquetFile(result.silver_paths[0]).read()
+
+    assert silver_table.num_rows == 1
+    assert silver_table.column("observation_date").to_pylist() == [
+        date(2026, 10, 5)
+    ]
+    assert silver_table.column("close").to_pylist() == [
+        Decimal("254.00000000")
+    ]
+
+    # The invalid observation is preserved with a useful quality code.
+    quarantine_path = result.quarantine_paths[0]
+    quarantined = json.loads(
+        quarantine_path.read_text(encoding="utf-8")
+    )
+
+    assert quarantined["record"]["symbol"] == "AAPL"
+    assert quarantined["record"]["observation_date"] == "2026-10-06"
+
+    violation_codes = {
+        violation["code"]
+        for violation in quarantined["violations"]
+    }
+    assert expected_code in violation_codes
+
+    # Confirm there were no unexpected output files.
+    assert len(list((tmp_path / "silver").rglob("*.parquet"))) == 1
+    assert len(list((tmp_path / "quarantine").rglob("*.json"))) == 1

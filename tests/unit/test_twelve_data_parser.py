@@ -2,7 +2,7 @@ import json
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
-
+from copy import deepcopy
 import pytest
 
 from financial_data_platform.models import MarketDataRecord
@@ -176,3 +176,94 @@ def test_parse_time_series_rejects_naive_extraction_timestamp():
 
     with pytest.raises(TwelveDataParseError):
         parse_time_series(payload, extracted_at=extracted_at)
+
+
+@pytest.mark.parametrize(
+    "invalid_volume",
+    [
+        "1.5",
+        1.5,
+        True,
+        False,
+        None,
+        "not-a-number",
+        "1e3",
+        "",
+    ],
+)
+def test_parser_rejects_non_integer_volumes(invalid_volume):
+    """Volume must never be silently truncated or coerced."""
+    payload = deepcopy(load_fixture("valid_time_series.json"))
+    payload["values"][0]["volume"] = invalid_volume
+
+    with pytest.raises(TwelveDataParseError):
+        parse_time_series(
+            payload,
+            extracted_at=datetime(
+                2026, 9, 26, 20, 30, tzinfo=timezone.utc
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    "valid_volume, expected",
+    [
+        ("1000", 1000),
+        (1000, 1000),
+        ("0", 0),
+        ("-100", -100),
+    ],
+)
+def test_parser_preserves_exact_integer_volumes(
+    valid_volume,
+    expected,
+):
+    payload = deepcopy(load_fixture("valid_time_series.json"))
+    payload["values"][0]["volume"] = valid_volume
+
+    records = parse_time_series(
+        payload,
+        extracted_at=datetime(
+            2026, 9, 26, 20, 30, tzinfo=timezone.utc
+        ),
+    )
+
+    assert records[0].volume == expected
+
+
+def test_parser_rejects_duplicate_observation_dates():
+    """A single response cannot contain two observations for one date."""
+    payload = deepcopy(load_fixture("valid_time_series.json"))
+    payload["values"].append(deepcopy(payload["values"][0]))
+
+    with pytest.raises(
+        TwelveDataParseError,
+        match="Duplicate observation date",
+    ):
+        parse_time_series(
+            payload,
+            extracted_at=datetime(
+                2026, 9, 26, 20, 30, tzinfo=timezone.utc
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    "invalid_payload",
+    [
+        None,
+        [],
+        "invalid",
+    ],
+)
+def test_parser_rejects_non_object_payloads(invalid_payload):
+    with pytest.raises(
+        TwelveDataParseError,
+        match="JSON object",
+    ):
+        parse_time_series(
+            invalid_payload,
+            extracted_at=datetime(
+                2026, 9, 26, 20, 30, tzinfo=timezone.utc
+            ),
+        )

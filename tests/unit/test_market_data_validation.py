@@ -7,6 +7,7 @@ from financial_data_platform.validation.market_data import (
     partition_market_data_records,
     validate_market_data_record,
 )
+from dataclasses import replace
 
 
 def test_valid_market_data_record_has_no_violations():
@@ -436,3 +437,97 @@ def test_partition_empty_batch_returns_empty_result():
 
     assert result.valid_records == []
     assert result.invalid_records == []
+
+
+@pytest.fixture
+def valid_quality_record():
+    """Canonical, deterministic observation for quality tests."""
+    return MarketDataRecord(
+        symbol="AAPL",
+        observation_date=date(2026, 10, 5),
+        open=Decimal("250.00"),
+        high=Decimal("255.00"),
+        low=Decimal("249.00"),
+        close=Decimal("254.00"),
+        volume=1000000,
+        source="twelve_data",
+        extracted_at=datetime(
+            2026, 10, 6, 18, 30, tzinfo=timezone.utc
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["open", "high", "low", "close"],
+)
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        Decimal("NaN"),
+        Decimal("Infinity"),
+        Decimal("-Infinity"),
+    ],
+)
+def test_non_finite_prices_produce_predictable_violations(
+    valid_quality_record,
+    field,
+    invalid_value,
+):
+    """All OHLC fields must reject NaN and infinite values."""
+    record = replace(
+        valid_quality_record,
+        **{field: invalid_value},
+    )
+
+    violations = validate_market_data_record(record)
+
+    assert ValidationViolation(
+        code=f"NON_FINITE_{field.upper()}",
+        field=field,
+        message=f"{field.capitalize()} price must be finite.",
+    ) in violations
+
+
+def test_non_finite_price_is_partitioned_as_invalid(
+    valid_quality_record,
+):
+    """Invalid numeric data must not escape into the valid partition."""
+    invalid_record = replace(
+        valid_quality_record,
+        close=Decimal("NaN"),
+    )
+
+    result = partition_market_data_records(
+        [valid_quality_record, invalid_record]
+    )
+
+    assert result.valid_records == [valid_quality_record]
+    assert len(result.invalid_records) == 1
+    assert result.invalid_records[0].record == invalid_record
+    assert any(
+        violation.code == "NON_FINITE_CLOSE"
+        for violation in result.invalid_records[0].violations
+    )
+
+
+def test_all_non_finite_prices_produce_four_violations(
+    valid_quality_record,
+):
+    """Collect all four non-finite violations without crashing."""
+    record = replace(
+        valid_quality_record,
+        open=Decimal("NaN"),
+        high=Decimal("Infinity"),
+        low=Decimal("-Infinity"),
+        close=Decimal("NaN"),
+    )
+
+    violations = validate_market_data_record(record)
+
+    assert {violation.code for violation in violations} == {
+        "NON_FINITE_OPEN",
+        "NON_FINITE_HIGH",
+        "NON_FINITE_LOW",
+        "NON_FINITE_CLOSE",
+    }
