@@ -76,4 +76,5 @@ def process_raw_file_to_silver(
         "quarantine_paths": [
             str(path) for path in result.quarantine_paths
         ],
+        "quality_report": result.quality_report,
     }

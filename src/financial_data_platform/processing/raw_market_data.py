@@ -11,6 +11,9 @@ from financial_data_platform.storage.silver import SilverWriter
 from financial_data_platform.validation.market_data import (
     partition_market_data_records,
 )
+from financial_data_platform.processing.quality_reporting import (
+    build_quality_report,
+)
 
 
 @dataclass(frozen=True)
@@ -22,6 +25,7 @@ class RawProcessingResult:
     invalid_count: int
     silver_paths: list[Path]
     quarantine_paths: list[Path]
+    quality_report: dict[str, object]
 
 
 def process_raw_market_data(
@@ -56,10 +60,16 @@ def process_raw_market_data(
         for invalid_record in validation_result.invalid_records
     ]
 
+    quality_report = build_quality_report(
+        validation_result,
+        quarantine_paths=quarantine_paths,
+    )
+
     return RawProcessingResult(
         total_records=len(records),
         valid_count=len(validation_result.valid_records),
         invalid_count=len(validation_result.invalid_records),
         silver_paths=silver_paths,
         quarantine_paths=quarantine_paths,
+        quality_report=quality_report,
     )
