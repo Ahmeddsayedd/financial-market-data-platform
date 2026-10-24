@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pyarrow.parquet as pq
 import pytest
@@ -63,6 +64,13 @@ def test_processes_valid_raw_file_into_silver(tmp_path):
     assert result["invalid_count"] == 0
     assert len(result["silver_paths"]) == 1
     assert result["quarantine_paths"] == []
+    assert result["quality_report"]["total_records"] == 1
+    assert result["quality_report"]["valid_count"] == 1
+    assert result["quality_report"]["invalid_count"] == 0
+    assert result["quality_report"]["acceptance_rate"] == 1.0
+    assert result["quality_report"]["violation_counts"] == {}
+
+    json.dumps(result["quality_report"])
 
     table = pq.read_table(
         result["silver_paths"][0],
@@ -86,6 +94,15 @@ def test_invalid_record_is_quarantined(tmp_path):
     assert result["invalid_count"] == 1
     assert result["silver_paths"] == []
     assert len(result["quarantine_paths"]) == 1
+    report = result["quality_report"]
+    assert report["total_records"] == 1
+    assert report["valid_count"] == 0
+    assert report["invalid_count"] == 1
+    assert report["rejection_rate"] == 1.0
+    assert report["violation_counts"] == {"NEGATIVE_VOLUME": 1}
+    assert [Path(path) for path in report["quarantine_paths"]] == [
+    Path(path) for path in result["quarantine_paths"]
+]
 
 
 def test_missing_raw_file_fails(tmp_path):
@@ -149,3 +166,65 @@ def test_reprocessing_preserves_single_market_observation(tmp_path):
         partitioning=None,
     )
     assert table.num_rows == 1
+
+
+def test_mixed_quality_report_reaches_orchestration(tmp_path):
+    """Report multiple violations without counting a record twice."""
+    raw_root = write_raw_fixture(tmp_path)
+    raw_path = raw_root / RAW_RELATIVE_PATH
+
+    payload = json.loads(raw_path.read_text(encoding="utf-8"))
+
+    invalid_observation = dict(payload["values"][0])
+    invalid_observation["datetime"] = "2026-10-22"
+    invalid_observation["close"] = "NaN"
+    invalid_observation["volume"] = "-100"
+
+    payload["values"].append(invalid_observation)
+
+    raw_path.write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+
+    result = process_fixture(tmp_path, raw_root)
+    report = result["quality_report"]
+
+    assert result["status"] == "success"
+    assert result["total_records"] == 2
+    assert result["valid_count"] == 1
+    assert result["invalid_count"] == 1
+
+    assert report["total_records"] == 2
+    assert report["valid_count"] == 1
+    assert report["invalid_count"] == 1
+    assert report["acceptance_rate"] == 0.5
+    assert report["rejection_rate"] == 0.5
+    assert report["violation_counts"] == {
+        "NEGATIVE_VOLUME": 1,
+        "NON_FINITE_CLOSE": 1,
+    }
+
+    assert len(result["silver_paths"]) == 1
+    assert len(result["quarantine_paths"]) == 1
+
+    # A valid record survives the invalid observation.
+    silver_table = pq.read_table(
+        result["silver_paths"][0],
+        partitioning=None,
+    )
+    assert silver_table.num_rows == 1
+
+    quarantined = json.loads(
+        Path(result["quarantine_paths"][0]).read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert {item["code"] for item in quarantined["violations"]} == {
+        "NEGATIVE_VOLUME",
+        "NON_FINITE_CLOSE",
+    }
+
+    # The complete orchestration result is compatible with JSON.
+    json.dumps(result)
