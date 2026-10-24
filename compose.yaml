@@ -4,6 +4,10 @@ services:
     image: postgres:17
     restart: unless-stopped
 
+    networks:
+      - default
+      - shared
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set}
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
@@ -26,3 +30,8 @@ services:
 
 volumes:
   postgres_data:
+
+networks:
+  shared:
+    external: true
+    name: financial-market-shared

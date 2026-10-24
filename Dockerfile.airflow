@@ -1,0 +1,8 @@
+# Project-specific Airflow runtime for financial data orchestration.
+FROM apache/airflow:3.1.7
+
+# Airflow runs as a non-root user.
+USER airflow
+
+# Psycopg 3 is required by financial_data_platform.warehouse.db.
+RUN pip install --no-cache-dir "psycopg[binary]>=3.2,<4"
