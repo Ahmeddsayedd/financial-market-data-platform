@@ -1,12 +1,24 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
-
+import re
 from financial_data_platform.models import MarketDataRecord
 
 
 class TwelveDataParseError(ValueError):
     """Raised when a Twelve Data response cannot be parsed safely."""
+
+def _parse_volume(value: object) -> int:
+    """Parse an exact integer volume without truncation or coercion."""
+    if type(value) is int:
+        return value
+
+    if isinstance(value, str) and re.fullmatch(r"-?[0-9]+", value):
+        return int(value)
+
+    raise TwelveDataParseError(
+        "Trading volume must be an integer or an integer string."
+    )
 
 
 def parse_time_series(
@@ -20,6 +32,11 @@ def parse_time_series(
         raise TwelveDataParseError(
             "extracted_at must be timezone-aware."
     )
+
+    if not isinstance(payload, dict):
+        raise TwelveDataParseError(
+            "Twelve Data response must be a JSON object."
+        )
 
     values = payload.get("values")
     meta = payload.get("meta")
@@ -47,6 +64,7 @@ def parse_time_series(
         )
 
     records: list[MarketDataRecord] = []
+    seen_dates: set = set()
 
     for index, value in enumerate(values):
         if not isinstance(value, dict):
@@ -64,7 +82,7 @@ def parse_time_series(
                 high=Decimal(value["high"]),
                 low=Decimal(value["low"]),
                 close=Decimal(value["close"]),
-                volume=int(value["volume"]),
+                volume=_parse_volume(value["volume"]),
                 source="twelve_data",
                 extracted_at=extracted_at,
             )
@@ -72,6 +90,16 @@ def parse_time_series(
             raise TwelveDataParseError(
                 f"Invalid observation at index {index}."
             ) from exc
+
+
+        if record.observation_date in seen_dates:
+            raise TwelveDataParseError(
+                "Duplicate observation date "
+                f"{record.observation_date.isoformat()} "
+                f"at index {index}."
+            )
+
+        seen_dates.add(record.observation_date)
 
         records.append(record)
 

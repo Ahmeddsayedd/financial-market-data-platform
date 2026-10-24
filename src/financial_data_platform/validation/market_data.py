@@ -40,8 +40,19 @@ def validate_market_data_record(
         "close": record.close,
     }
 
+    # NaN and Infinity must never reach Silver or Gold.
+    # Check finiteness before numeric comparisons, since comparing
+    # Decimal("NaN") with another number can raise InvalidOperation.
     for field, value in price_fields.items():
-        if value <= 0:
+        if not value.is_finite():
+            violations.append(
+                ValidationViolation(
+                    code=f"NON_FINITE_{field.upper()}",
+                    field=field,
+                    message=f"{field.capitalize()} price must be finite.",
+                )
+            )
+        elif value <= 0:
             violations.append(
                 ValidationViolation(
                     code=f"NON_POSITIVE_{field.upper()}",
@@ -59,40 +70,45 @@ def validate_market_data_record(
             )
         )
 
+    # Only perform ordering comparisons on finite values.
+    high_and_low_finite = (
+        record.high.is_finite() and record.low.is_finite()
+    )
 
-    if record.high < record.low:
-        violations.append(
-            ValidationViolation(
-                code="HIGH_BELOW_LOW",
-                field="high",
-                message="High price must not be below low price.",
+    if high_and_low_finite:
+        if record.high < record.low:
+            violations.append(
+                ValidationViolation(
+                    code="HIGH_BELOW_LOW",
+                    field="high",
+                    message="High price must not be below low price.",
+                )
             )
-        )
 
-    if record.low <= record.high and not (
-        record.low <= record.open <= record.high
-    ):
-        violations.append(
-            ValidationViolation(
-                code="OPEN_OUTSIDE_RANGE",
-                field="open",
-                message="Open price must be between low and high prices.",
-            )
-        )
+        else:
+            if (
+                record.open.is_finite()
+                and not record.low <= record.open <= record.high
+            ):
+                violations.append(
+                    ValidationViolation(
+                        code="OPEN_OUTSIDE_RANGE",
+                        field="open",
+                        message="Open price must be between low and high prices.",
+                    )
+                )
 
-
-
-    if record.low <= record.high and not (
-        record.low <= record.close <= record.high
-    ):
-        violations.append(
-            ValidationViolation(
-                code="CLOSE_OUTSIDE_RANGE",
-                field="close",
-                message="Close price must be between low and high prices.",
-            )
-        )
-
+            if (
+                record.close.is_finite()
+                and not record.low <= record.close <= record.high
+            ):
+                violations.append(
+                    ValidationViolation(
+                        code="CLOSE_OUTSIDE_RANGE",
+                        field="close",
+                        message="Close price must be between low and high prices.",
+                    )
+                )
 
     return violations
 
