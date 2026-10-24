@@ -5,16 +5,22 @@ Run this script inside the Airflow Docker container.
 
 from pathlib import Path
 
-from airflow.models.dagbag import DagBag
+from airflow.models.dagbag import DagBag # pyright: ignore[reportMissingImports]
 
 
 DAG_ID = "financial_market_pipeline"
 DAG_FOLDER = Path("/opt/airflow/dags")
 
 EXPECTED_DEPENDENCIES = {
-    "check_pipeline_configuration": {"prepare_pipeline_run"},
-    "prepare_pipeline_run": {"summarize_pipeline_run"},
+    "check_pipeline_configuration": {
+        "prepare_pipeline_run",
+        "ingest_raw_market_data",
+    },
+    "prepare_pipeline_run": {
+        "summarize_pipeline_run",
+    },
     "summarize_pipeline_run": set(),
+    "ingest_raw_market_data": set(),
 }
 
 
@@ -43,8 +49,11 @@ def main() -> None:
             f"got {actual_downstream}"
         )
 
+    ingestion_task = dag.get_task("ingest_raw_market_data")
+    assert ingestion_task.retries == 0
+
     print("PASS: DAG imports successfully")
-    print("PASS: All three tasks are registered")
+    print("PASS: All four tasks are registered")
     print("PASS: Task dependency chain is correct")
     print("PASS: UTC start date, catchup, and paused defaults")
 
