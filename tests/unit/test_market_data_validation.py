@@ -36,7 +36,6 @@ def test_valid_market_data_record_has_no_violations():
     assert violations == []
 
 
-
 @pytest.mark.parametrize(
     ("field", "expected_code", "expected_message"),
     [
@@ -81,12 +80,14 @@ def test_non_positive_price_produces_violation(
 
     violations = validate_market_data_record(record)
 
-    assert ValidationViolation(
-        code=expected_code,
-        field=field,
-        message=expected_message,
-    ) in violations
-
+    assert (
+        ValidationViolation(
+            code=expected_code,
+            field=field,
+            message=expected_message,
+        )
+        in violations
+    )
 
 
 def test_zero_volume_is_valid():
@@ -147,7 +148,6 @@ def test_negative_volume_produces_violation():
     ]
 
 
-
 def test_high_below_low_produces_violation():
     record = MarketDataRecord(
         symbol="AAPL",
@@ -171,11 +171,14 @@ def test_high_below_low_produces_violation():
 
     violations = validate_market_data_record(record)
 
-    assert ValidationViolation(
-        code="HIGH_BELOW_LOW",
-        field="high",
-        message="High price must not be below low price.",
-    ) in violations
+    assert (
+        ValidationViolation(
+            code="HIGH_BELOW_LOW",
+            field="high",
+            message="High price must not be below low price.",
+        )
+        in violations
+    )
 
 
 @pytest.mark.parametrize(
@@ -208,12 +211,14 @@ def test_open_outside_low_high_range_produces_violation(open_price):
 
     violations = validate_market_data_record(record)
 
-    assert ValidationViolation(
-        code="OPEN_OUTSIDE_RANGE",
-        field="open",
-        message="Open price must be between low and high prices.",
-    ) in violations
-
+    assert (
+        ValidationViolation(
+            code="OPEN_OUTSIDE_RANGE",
+            field="open",
+            message="Open price must be between low and high prices.",
+        )
+        in violations
+    )
 
 
 @pytest.mark.parametrize(
@@ -249,7 +254,6 @@ def test_open_at_low_or_high_boundary_is_valid(open_price):
     assert violations == []
 
 
-
 @pytest.mark.parametrize(
     "close_price",
     [
@@ -280,12 +284,14 @@ def test_close_outside_low_high_range_produces_violation(close_price):
 
     violations = validate_market_data_record(record)
 
-    assert ValidationViolation(
-        code="CLOSE_OUTSIDE_RANGE",
-        field="close",
-        message="Close price must be between low and high prices.",
-    ) in violations
-
+    assert (
+        ValidationViolation(
+            code="CLOSE_OUTSIDE_RANGE",
+            field="close",
+            message="Close price must be between low and high prices.",
+        )
+        in violations
+    )
 
 
 @pytest.mark.parametrize(
@@ -373,7 +379,6 @@ def test_record_can_produce_multiple_violations():
     ]
 
 
-
 def test_partition_records_separates_valid_and_invalid_records():
     valid_record = MarketDataRecord(
         symbol="AAPL",
@@ -415,9 +420,7 @@ def test_partition_records_separates_valid_and_invalid_records():
         ),
     )
 
-    result = partition_market_data_records(
-        [valid_record, invalid_record]
-    )
+    result = partition_market_data_records([valid_record, invalid_record])
 
     assert result.valid_records == [valid_record]
     assert len(result.invalid_records) == 1
@@ -429,7 +432,6 @@ def test_partition_records_separates_valid_and_invalid_records():
             message="Volume must not be negative.",
         )
     ]
-
 
 
 def test_partition_empty_batch_returns_empty_result():
@@ -451,9 +453,7 @@ def valid_quality_record():
         close=Decimal("254.00"),
         volume=1000000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 6, 18, 30, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 6, 18, 30, tzinfo=timezone.utc),
     )
 
 
@@ -482,11 +482,14 @@ def test_non_finite_prices_produce_predictable_violations(
 
     violations = validate_market_data_record(record)
 
-    assert ValidationViolation(
-        code=f"NON_FINITE_{field.upper()}",
-        field=field,
-        message=f"{field.capitalize()} price must be finite.",
-    ) in violations
+    assert (
+        ValidationViolation(
+            code=f"NON_FINITE_{field.upper()}",
+            field=field,
+            message=f"{field.capitalize()} price must be finite.",
+        )
+        in violations
+    )
 
 
 def test_non_finite_price_is_partitioned_as_invalid(
@@ -498,9 +501,7 @@ def test_non_finite_price_is_partitioned_as_invalid(
         close=Decimal("NaN"),
     )
 
-    result = partition_market_data_records(
-        [valid_quality_record, invalid_record]
-    )
+    result = partition_market_data_records([valid_quality_record, invalid_record])
 
     assert result.valid_records == [valid_quality_record]
     assert len(result.invalid_records) == 1

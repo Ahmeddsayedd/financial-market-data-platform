@@ -50,42 +50,42 @@ def test_write_preserves_provider_payload(tmp_path):
 
 
 def test_write_uses_deterministic_partitioned_path(tmp_path):
-        payload = {
-            "meta": {"symbol": "AAPL"},
-            "values": [],
-            "status": "ok",
-        }
+    payload = {
+        "meta": {"symbol": "AAPL"},
+        "values": [],
+        "status": "ok",
+    }
 
-        extracted_at = datetime(
-            2026,
-            10,
-            6,
-            18,
-            30,
-            45,
-            tzinfo=timezone.utc,
-        )
+    extracted_at = datetime(
+        2026,
+        10,
+        6,
+        18,
+        30,
+        45,
+        tzinfo=timezone.utc,
+    )
 
-        writer = RawResponseWriter(base_dir=tmp_path)
+    writer = RawResponseWriter(base_dir=tmp_path)
 
-        raw_path = writer.write(
-            payload,
-            provider="twelve_data",
-            symbol="AAPL",
-            extracted_at=extracted_at,
-        )
+    raw_path = writer.write(
+        payload,
+        provider="twelve_data",
+        symbol="AAPL",
+        extracted_at=extracted_at,
+    )
 
-        expected_path = (
-            tmp_path
-            / "twelve_data"
-            / "AAPL"
-            / "2026"
-            / "10"
-            / "06"
-            / "20261006T183045000000Z.json"
-        )
+    expected_path = (
+        tmp_path
+        / "twelve_data"
+        / "AAPL"
+        / "2026"
+        / "10"
+        / "06"
+        / "20261006T183045000000Z.json"
+    )
 
-        assert raw_path == expected_path
+    assert raw_path == expected_path
 
 
 def test_write_rejects_naive_extraction_timestamp(tmp_path):
@@ -186,7 +186,6 @@ def test_write_is_idempotent_for_same_extraction(tmp_path):
         stored_payload = json.load(raw_file)
 
     assert stored_payload == payload
-
 
 
 @pytest.mark.parametrize(

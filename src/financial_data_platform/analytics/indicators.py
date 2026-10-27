@@ -24,10 +24,7 @@ def calculate_daily_return_pct(
     if previous_close == 0:
         return None
 
-    return (
-        (current_close - previous_close)
-        / previous_close
-    ) * Decimal("100")
+    return ((current_close - previous_close) / previous_close) * Decimal("100")
 
 
 def calculate_sma(
@@ -102,9 +99,7 @@ def calculate_market_indicators(
         )
 
         if observation_identity in seen_observations:
-            raise ValueError(
-                f"Duplicate market observation: {observation_identity}"
-            )
+            raise ValueError(f"Duplicate market observation: {observation_identity}")
 
         seen_observations.add(observation_identity)
 

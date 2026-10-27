@@ -31,23 +31,17 @@ def build_quality_report(
     paths = quarantine_paths if quarantine_paths is not None else []
 
     if quarantine_paths is not None and len(paths) != invalid_count:
-        raise ValueError(
-            "Quarantine path count must equal rejected record count"
-        )
+        raise ValueError("Quarantine path count must equal rejected record count")
 
     return {
         "total_records": total_records,
         "valid_count": valid_count,
         "invalid_count": invalid_count,
         "acceptance_rate": (
-            round(valid_count / total_records, 4)
-            if total_records
-            else 0.0
+            round(valid_count / total_records, 4) if total_records else 0.0
         ),
         "rejection_rate": (
-            round(invalid_count / total_records, 4)
-            if total_records
-            else 0.0
+            round(invalid_count / total_records, 4) if total_records else 0.0
         ),
         "violation_counts": dict(sorted(violation_counts.items())),
         "quarantine_paths": [path.as_posix() for path in paths],

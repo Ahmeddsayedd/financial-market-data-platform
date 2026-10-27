@@ -9,9 +9,8 @@ from financial_data_platform.validation.market_data import InvalidMarketDataReco
 def _validate_path_component(value: str) -> None:
     """Reject values that could escape the intended storage hierarchy."""
     if not value or "/" in value or "\\" in value or ".." in value:
-        raise ValueError(
-            "source and symbol must be safe path components"
-        )
+        raise ValueError("source and symbol must be safe path components")
+
 
 class QuarantineWriter:
     """Persist invalid market-data records to quarantine storage."""
@@ -39,9 +38,7 @@ class QuarantineWriter:
 
         timestamp = detected_at.strftime("%Y%m%dT%H%M%S%fZ")
 
-        filename = (
-            f"{timestamp}_{record.observation_date.isoformat()}.json"
-        )
+        filename = f"{timestamp}_{record.observation_date.isoformat()}.json"
 
         path = (
             self.base_dir

@@ -30,9 +30,7 @@ def tracking_run_id(*, dag_id: str, airflow_run_id: str) -> UUID:
 def _require_test_database() -> None:
     """Prevent tracking writes to the main Gold database."""
     if os.getenv("POSTGRES_DB") != "financial_market_test":
-        raise ValueError(
-            "Execution tracking is restricted to financial_market_test"
-        )
+        raise ValueError("Execution tracking is restricted to financial_market_test")
 
 
 def _require_aware_timestamp(value: datetime) -> None:
@@ -109,9 +107,7 @@ def finish_pipeline_tracking(
 
         for name, value in counters.items():
             if type(value) is not int or value < 0:
-                raise ValueError(
-                    "Execution counters must be nonnegative integers"
-                )
+                raise ValueError("Execution counters must be nonnegative integers")
             counts[name] = value
 
     run_id = tracking_run_id(
@@ -169,14 +165,10 @@ def finish_pipeline_tracking(
                 row = cursor.fetchone()
 
                 if row is None:
-                    raise RuntimeError(
-                        "Tracking record does not exist"
-                    )
+                    raise RuntimeError("Tracking record does not exist")
 
                 if row[0] != status:
-                    raise RuntimeError(
-                        "Tracking record is not in the expected state"
-                    )
+                    raise RuntimeError("Tracking record is not in the expected state")
 
         connection.commit()
 
@@ -215,16 +207,12 @@ def build_pipeline_counters(
         counts["records_rejected"] = silver_result["invalid_count"]
 
     if gold_result and gold_result.get("status") == "success":
-        counts["records_loaded"] = (
-            gold_result["inserted"] + gold_result["updated"]
-        )
+        counts["records_loaded"] = gold_result["inserted"] + gold_result["updated"]
         counts["records_rejected"] += gold_result["rejected"]
 
     for name, value in counts.items():
         if type(value) is not int or value < 0:
-            raise ValueError(
-                f"{name} must be a nonnegative integer"
-            )
+            raise ValueError(f"{name} must be a nonnegative integer")
 
     return counts
 
@@ -243,9 +231,7 @@ def update_pipeline_tracking_counters(
 
     for name, value in counters.items():
         if type(value) is not int or value < 0:
-            raise ValueError(
-                f"{name} must be a nonnegative integer"
-            )
+            raise ValueError(f"{name} must be a nonnegative integer")
 
     run_id = tracking_run_id(
         dag_id=dag_id,
@@ -279,9 +265,7 @@ def update_pipeline_tracking_counters(
             )
 
             if cursor.rowcount != 1:
-                raise RuntimeError(
-                    "A running tracking record is required"
-                )
+                raise RuntimeError("A running tracking record is required")
 
         connection.commit()
 

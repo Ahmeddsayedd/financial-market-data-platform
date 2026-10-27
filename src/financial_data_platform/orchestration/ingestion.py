@@ -34,8 +34,7 @@ def ingest_market_symbols(
         raise ValueError("At least one market symbol is required.")
 
     if any(
-        not isinstance(symbol, str) or not symbol.strip()
-        for symbol in selected_symbols
+        not isinstance(symbol, str) or not symbol.strip() for symbol in selected_symbols
     ):
         raise ValueError("Market symbols must be non-empty strings.")
 

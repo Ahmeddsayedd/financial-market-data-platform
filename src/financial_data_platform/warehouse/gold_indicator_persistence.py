@@ -16,6 +16,7 @@ from financial_data_platform.warehouse.gold_loader import (
     load_market_batch,
 )
 
+
 def update_gold_indicators(
     cursor,
     asset_key: int,
@@ -41,16 +42,14 @@ def update_gold_indicators(
 
     if row is None:
         raise ValueError(
-            f"Gold market fact not found: "
-            f"asset_key={asset_key}, date_key={date_key}"
+            f"Gold market fact not found: asset_key={asset_key}, date_key={date_key}"
         )
 
     stored_extracted_at = row[0]
 
     if stored_extracted_at != indicators.record.extracted_at:
         raise ValueError(
-            f"Stale market observation: "
-            f"asset_key={asset_key}, date_key={date_key}"
+            f"Stale market observation: asset_key={asset_key}, date_key={date_key}"
         )
 
     cursor.execute(
@@ -132,10 +131,7 @@ def calculate_and_persist_indicators(
     Incoming market records must already exist in Gold.
     The caller owns the database transaction.
     """
-    identities = sorted({
-        (record.source, record.symbol)
-        for record in records
-    })
+    identities = sorted({(record.source, record.symbol) for record in records})
 
     calculated: list[MarketIndicators] = []
 
@@ -146,9 +142,7 @@ def calculate_and_persist_indicators(
             symbol=symbol,
         )
 
-        calculated.extend(
-            calculate_market_indicators(history)
-        )
+        calculated.extend(calculate_market_indicators(history))
 
     return persist_market_indicators(cursor, calculated)
 
@@ -170,9 +164,7 @@ def load_market_records_with_indicators(
                     f"{market_counts['rejected']} rejected observation(s)"
                 )
 
-            indicator_counts = calculate_and_persist_indicators(
-                cursor, records
-            )
+            indicator_counts = calculate_and_persist_indicators(cursor, records)
 
         connection.commit()
 

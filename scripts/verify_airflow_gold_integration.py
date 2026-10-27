@@ -28,9 +28,7 @@ def count_aapl_rows():
             database = cursor.fetchone()[0]
 
             if database != EXPECTED_DATABASE:
-                raise RuntimeError(
-                    f"Refusing database operation against {database}"
-                )
+                raise RuntimeError(f"Refusing database operation against {database}")
 
             cursor.execute(
                 """

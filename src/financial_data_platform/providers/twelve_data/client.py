@@ -83,9 +83,7 @@ class TwelveDataClient:
                 )
 
             if payload.get("status") == "error":
-                raise TwelveDataClientError(
-                    "Twelve Data provider returned an error."
-                )
+                raise TwelveDataClientError("Twelve Data provider returned an error.")
 
             return payload
 

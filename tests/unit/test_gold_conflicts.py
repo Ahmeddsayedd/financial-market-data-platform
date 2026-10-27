@@ -15,9 +15,7 @@ def test_new_observation_should_be_inserted():
         "low": Decimal("248.00000000"),
         "close": Decimal("253.00000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     result = decide_fact_action(
@@ -37,9 +35,7 @@ def test_identical_observation_should_remain_unchanged():
         "low": Decimal("248.00000000"),
         "close": Decimal("253.00000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     incoming = existing.copy()
@@ -61,17 +57,13 @@ def test_newer_extraction_with_changed_prices_should_update():
         "low": Decimal("248.00000000"),
         "close": Decimal("253.00000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     incoming = {
         **existing,
         "close": Decimal("254.50000000"),
-        "extracted_at": datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     }
 
     result = decide_fact_action(
@@ -91,17 +83,13 @@ def test_older_extraction_should_remain_unchanged():
         "low": Decimal("248.00000000"),
         "close": Decimal("254.50000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     }
 
     incoming = {
         **existing,
         "close": Decimal("253.00000000"),
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     result = decide_fact_action(
@@ -121,9 +109,7 @@ def test_equal_timestamp_with_different_prices_should_reject():
         "low": Decimal("248.00000000"),
         "close": Decimal("253.00000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     incoming = {
@@ -148,16 +134,12 @@ def test_same_prices_with_newer_extraction_should_update():
         "low": Decimal("248.00000000"),
         "close": Decimal("253.00000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     incoming = {
         **existing,
-        "extracted_at": datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     }
 
     result = decide_fact_action(
@@ -177,16 +159,12 @@ def test_same_prices_with_older_extraction_should_remain_unchanged():
         "low": Decimal("248.00000000"),
         "close": Decimal("253.00000000"),
         "volume": 1000000,
-        "extracted_at": datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     }
 
     incoming = {
         **existing,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     result = decide_fact_action(

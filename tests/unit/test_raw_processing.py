@@ -42,20 +42,12 @@ def test_processes_valid_raw_observation_into_silver(tmp_path):
         raw_path=raw_path,
         silver_writer=silver_writer,
         quarantine_writer=quarantine_writer,
-        extracted_at=datetime(
-            2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
-        ),
-        detected_at=datetime(
-            2026, 10, 6, 18, 31, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc),
+        detected_at=datetime(2026, 10, 6, 18, 31, tzinfo=timezone.utc),
     )
 
     expected_silver_path = (
-        tmp_path
-        / "silver"
-        / "symbol=AAPL"
-        / "year=2026"
-        / "data.parquet"
+        tmp_path / "silver" / "symbol=AAPL" / "year=2026" / "data.parquet"
     )
 
     assert result.total_records == 1
@@ -67,15 +59,10 @@ def test_processes_valid_raw_observation_into_silver(tmp_path):
     table = pq.ParquetFile(expected_silver_path).read()
 
     assert table.num_rows == 1
-    assert table.column("observation_date").to_pylist() == [
-        date(2026, 10, 5)
-    ]
-    assert table.column("close").to_pylist() == [
-        Decimal("254.00000000")
-    ]
+    assert table.column("observation_date").to_pylist() == [date(2026, 10, 5)]
+    assert table.column("close").to_pylist() == [Decimal("254.00000000")]
 
     assert list((tmp_path / "quarantine").rglob("*.json")) == []
-
 
 
 def test_processes_mixed_valid_and_invalid_observations(tmp_path):
@@ -122,9 +109,7 @@ def test_processes_mixed_valid_and_invalid_observations(tmp_path):
 
     silver_table = pq.ParquetFile(result.silver_paths[0]).read()
     assert silver_table.num_rows == 1
-    assert silver_table.column("observation_date").to_pylist() == [
-        date(2026, 10, 5)
-    ]
+    assert silver_table.column("observation_date").to_pylist() == [date(2026, 10, 5)]
 
     quarantine_path = result.quarantine_paths[0]
     assert quarantine_path.exists()
@@ -134,7 +119,6 @@ def test_processes_mixed_valid_and_invalid_observations(tmp_path):
     assert quarantined["record"]["symbol"] == "AAPL"
     assert quarantined["record"]["volume"] == -100
     assert quarantined["violations"]
-
 
 
 def test_processes_invalid_only_batch_without_writing_silver(tmp_path):
@@ -177,7 +161,6 @@ def test_processes_invalid_only_batch_without_writing_silver(tmp_path):
     assert len(list((tmp_path / "quarantine").rglob("*.json"))) == 1
 
 
-
 def test_rejects_malformed_raw_json_without_writing_outputs(tmp_path):
     raw_path = tmp_path / "raw" / "aapl.json"
     raw_path.parent.mkdir(parents=True)
@@ -198,7 +181,6 @@ def test_rejects_malformed_raw_json_without_writing_outputs(tmp_path):
 
     assert list((tmp_path / "silver").rglob("*.parquet")) == []
     assert list((tmp_path / "quarantine").rglob("*.json")) == []
-
 
 
 def test_rejects_structurally_invalid_response_without_writing_outputs(
@@ -225,7 +207,6 @@ def test_rejects_structurally_invalid_response_without_writing_outputs(
 
     assert list((tmp_path / "silver").rglob("*.parquet")) == []
     assert list((tmp_path / "quarantine").rglob("*.json")) == []
-
 
 
 def test_rejects_empty_observations_without_writing_outputs(tmp_path):
@@ -255,7 +236,6 @@ def test_rejects_empty_observations_without_writing_outputs(tmp_path):
     assert list((tmp_path / "quarantine").rglob("*.json")) == []
 
 
-
 def test_rejects_missing_raw_file_without_writing_outputs(tmp_path):
     raw_path = tmp_path / "raw" / "missing.json"
 
@@ -272,7 +252,6 @@ def test_rejects_missing_raw_file_without_writing_outputs(tmp_path):
 
     assert list((tmp_path / "silver").rglob("*.parquet")) == []
     assert list((tmp_path / "quarantine").rglob("*.json")) == []
-
 
 
 def test_reprocessing_same_raw_file_does_not_duplicate_silver_records(
@@ -327,13 +306,10 @@ def test_reprocessing_same_raw_file_does_not_duplicate_silver_records(
     table = pq.ParquetFile(silver_path).read()
 
     assert table.num_rows == 1
-    assert table.column("observation_date").to_pylist() == [
-        date(2026, 10, 5)
-    ]
+    assert table.column("observation_date").to_pylist() == [date(2026, 10, 5)]
 
     assert len(list((tmp_path / "silver").rglob("*.parquet"))) == 1
     assert list((tmp_path / "quarantine").rglob("*.json")) == []
-
 
 
 def test_reprocessing_invalid_raw_file_does_not_duplicate_quarantine(
@@ -388,9 +364,7 @@ def test_reprocessing_invalid_raw_file_does_not_duplicate_quarantine(
     assert first_result.quarantine_paths == second_result.quarantine_paths
     assert len(first_result.quarantine_paths) == 1
 
-    quarantine_files = list(
-        (tmp_path / "quarantine").rglob("*.json")
-    )
+    quarantine_files = list((tmp_path / "quarantine").rglob("*.json"))
 
     assert len(quarantine_files) == 1
     assert quarantine_files[0] == first_result.quarantine_paths[0]
@@ -431,15 +405,9 @@ def test_duplicate_raw_dates_produce_no_silver_or_quarantine(
         process_raw_market_data(
             raw_path=raw_path,
             silver_writer=SilverWriter(tmp_path / "silver"),
-            quarantine_writer=QuarantineWriter(
-                tmp_path / "quarantine"
-            ),
-            extracted_at=datetime(
-                2026, 10, 6, tzinfo=timezone.utc
-            ),
-            detected_at=datetime(
-                2026, 10, 6, 1, tzinfo=timezone.utc
-            ),
+            quarantine_writer=QuarantineWriter(tmp_path / "quarantine"),
+            extracted_at=datetime(2026, 10, 6, tzinfo=timezone.utc),
+            detected_at=datetime(2026, 10, 6, 1, tzinfo=timezone.utc),
         )
 
     assert list((tmp_path / "silver").rglob("*.parquet")) == []
@@ -509,26 +477,17 @@ def test_non_finite_price_is_quarantined_without_losing_valid_data(
     silver_table = pq.ParquetFile(result.silver_paths[0]).read()
 
     assert silver_table.num_rows == 1
-    assert silver_table.column("observation_date").to_pylist() == [
-        date(2026, 10, 5)
-    ]
-    assert silver_table.column("close").to_pylist() == [
-        Decimal("254.00000000")
-    ]
+    assert silver_table.column("observation_date").to_pylist() == [date(2026, 10, 5)]
+    assert silver_table.column("close").to_pylist() == [Decimal("254.00000000")]
 
     # The invalid observation is preserved with a useful quality code.
     quarantine_path = result.quarantine_paths[0]
-    quarantined = json.loads(
-        quarantine_path.read_text(encoding="utf-8")
-    )
+    quarantined = json.loads(quarantine_path.read_text(encoding="utf-8"))
 
     assert quarantined["record"]["symbol"] == "AAPL"
     assert quarantined["record"]["observation_date"] == "2026-10-06"
 
-    violation_codes = {
-        violation["code"]
-        for violation in quarantined["violations"]
-    }
+    violation_codes = {violation["code"] for violation in quarantined["violations"]}
     assert expected_code in violation_codes
 
     # Confirm there were no unexpected output files.

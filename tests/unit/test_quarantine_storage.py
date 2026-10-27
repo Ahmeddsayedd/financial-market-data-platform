@@ -132,7 +132,6 @@ def test_quarantine_writer_preserves_record_violations_and_detection_metadata(
     }
 
 
-
 def test_quarantine_writer_rejects_naive_detected_at(tmp_path):
     invalid_record = InvalidMarketDataRecord(
         record=MarketDataRecord(
@@ -175,7 +174,6 @@ def test_quarantine_writer_rejects_naive_detected_at(tmp_path):
             invalid_record,
             detected_at=naive_detected_at,
         )
-
 
 
 def test_quarantine_writer_uses_deterministic_path(tmp_path):
@@ -233,7 +231,6 @@ def test_quarantine_writer_uses_deterministic_path(tmp_path):
     )
 
     assert path == expected_path
-
 
 
 def test_quarantine_writer_normalizes_detected_at_to_utc(tmp_path):
@@ -295,7 +292,6 @@ def test_quarantine_writer_normalizes_detected_at_to_utc(tmp_path):
     )
 
     assert offset_path == utc_path
-
 
 
 @pytest.mark.parametrize(
@@ -362,7 +358,6 @@ def test_quarantine_writer_rejects_unsafe_path_components(
         )
 
 
-
 def test_quarantine_writer_is_idempotent_for_same_record_and_detected_at(
     tmp_path,
 ):
@@ -422,7 +417,6 @@ def test_quarantine_writer_is_idempotent_for_same_record_and_detected_at(
     assert payload["record"]["symbol"] == "AAPL"
     assert payload["record"]["observation_date"] == "2026-10-05"
     assert payload["violations"][0]["code"] == "NEGATIVE_VOLUME"
-
 
 
 def test_quarantine_writer_uses_distinct_paths_for_different_observations(

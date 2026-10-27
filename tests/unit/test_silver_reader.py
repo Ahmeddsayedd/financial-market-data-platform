@@ -56,9 +56,7 @@ def test_read_silver_parquet_returns_multiple_observations(tmp_path):
             close=Decimal("253.00000000"),
             volume=1000000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 10, 9, 18, 0, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
         ),
         MarketDataRecord(
             symbol="AAPL",
@@ -69,9 +67,7 @@ def test_read_silver_parquet_returns_multiple_observations(tmp_path):
             close=Decimal("256.00000000"),
             volume=1200000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 10, 9, 18, 0, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
         ),
     ]
 
@@ -134,9 +130,7 @@ def test_read_silver_parquet_rejects_float_prices(tmp_path):
         close=Decimal("253.87654321"),
         volume=1234567,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     table = pa.Table.from_pylist(

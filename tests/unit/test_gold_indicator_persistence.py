@@ -14,6 +14,7 @@ from financial_data_platform.warehouse.gold_indicator_persistence import (
 from financial_data_platform.analytics.indicators import MarketIndicators
 from financial_data_platform.models.market_data import MarketDataRecord
 
+
 def test_update_gold_indicators_updates_existing_fact():
     """Update indicator columns without modifying OHLCV data."""
 
@@ -26,9 +27,7 @@ def test_update_gold_indicators_updates_existing_fact():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -85,7 +84,6 @@ def test_update_gold_indicators_updates_existing_fact():
 def test_update_gold_indicators_skips_identical_values():
     """Do not update a fact when all indicator values are unchanged."""
 
-
     record = MarketDataRecord(
         symbol="AAPL",
         observation_date=date(2026, 10, 9),
@@ -95,9 +93,7 @@ def test_update_gold_indicators_skips_identical_values():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -133,9 +129,7 @@ def test_update_gold_indicators_uses_null_safe_change_detection():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -175,9 +169,7 @@ def test_update_gold_indicators_requires_matching_extraction_timestamp():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -216,9 +208,7 @@ def test_persist_market_indicators_updates_existing_fact():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -270,9 +260,7 @@ def test_persist_market_indicators_counts_mixed_outcomes():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     second_record = replace(
@@ -325,9 +313,7 @@ def test_calculate_and_persist_indicators_connects_analytics_to_gold():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     cursor = MagicMock()
@@ -375,9 +361,7 @@ def test_calculate_and_persist_indicators_uses_gold_history():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     cursor = MagicMock()
@@ -418,9 +402,7 @@ def test_calculate_and_persist_indicators_sma_7_across_batches():
         close=Decimal("101"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     from dataclasses import replace
@@ -557,9 +539,7 @@ def test_load_market_records_with_indicators_recalculates_after_correction():
         close=Decimal("104.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     )
 
     connection = MagicMock()

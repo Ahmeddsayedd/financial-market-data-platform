@@ -23,13 +23,13 @@ class RawResponseWriter:
 
         if "/" in provider or "\\" in provider or ".." in provider:
             raise ValueError("provider contains unsafe path characters.")
-        
+
         if not symbol.strip():
             raise ValueError("symbol must not be empty.")
 
         if "/" in symbol or "\\" in symbol or ".." in symbol:
             raise ValueError("symbol contains unsafe path characters.")
-        
+
         if extracted_at.tzinfo is None or extracted_at.utcoffset() is None:
             raise ValueError("extracted_at must be timezone-aware.")
 

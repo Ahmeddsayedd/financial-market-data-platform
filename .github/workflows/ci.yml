@@ -35,6 +35,9 @@ jobs:
       - name: Run Ruff lint
         run: python -m ruff check .
 
+      - name: Check Ruff formatting
+        run: python -m ruff format --check .
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest

@@ -8,6 +8,7 @@ from financial_data_platform.models import MarketDataRecord
 class TwelveDataParseError(ValueError):
     """Raised when a Twelve Data response cannot be parsed safely."""
 
+
 def _parse_volume(value: object) -> int:
     """Parse an exact integer volume without truncation or coercion."""
     if type(value) is int:
@@ -29,14 +30,10 @@ def parse_time_series(
     """Convert a Twelve Data time-series response to canonical records."""
 
     if extracted_at.tzinfo is None or extracted_at.utcoffset() is None:
-        raise TwelveDataParseError(
-            "extracted_at must be timezone-aware."
-    )
+        raise TwelveDataParseError("extracted_at must be timezone-aware.")
 
     if not isinstance(payload, dict):
-        raise TwelveDataParseError(
-            "Twelve Data response must be a JSON object."
-        )
+        raise TwelveDataParseError("Twelve Data response must be a JSON object.")
 
     values = payload.get("values")
     meta = payload.get("meta")
@@ -47,9 +44,7 @@ def parse_time_series(
         )
 
     if not values:
-        raise TwelveDataParseError(
-        "Twelve Data response contains no observations."
-    )
+        raise TwelveDataParseError("Twelve Data response contains no observations.")
 
     if not isinstance(meta, dict):
         raise TwelveDataParseError(
@@ -90,7 +85,6 @@ def parse_time_series(
             raise TwelveDataParseError(
                 f"Invalid observation at index {index}."
             ) from exc
-
 
         if record.observation_date in seen_dates:
             raise TwelveDataParseError(

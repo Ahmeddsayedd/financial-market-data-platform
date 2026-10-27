@@ -59,8 +59,7 @@ def test_start_rejects_non_test_database(monkeypatch):
     monkeypatch.setenv("POSTGRES_DB", "financial_market")
 
     with patch(
-        "financial_data_platform.orchestration.execution_tracking."
-        "connect_to_database"
+        "financial_data_platform.orchestration.execution_tracking.connect_to_database"
     ) as connection:
         with pytest.raises(ValueError, match="financial_market_test"):
             start_pipeline_tracking(
@@ -224,8 +223,7 @@ def test_counter_snapshot_persists_actual_values(monkeypatch):
     }
 
     with patch(
-        "financial_data_platform.orchestration.execution_tracking."
-        "connect_to_database",
+        "financial_data_platform.orchestration.execution_tracking.connect_to_database",
         return_value=connection,
     ):
         update_pipeline_tracking_counters(
@@ -262,13 +260,10 @@ def test_counter_snapshot_requires_existing_running_record(monkeypatch):
     }
 
     with patch(
-        "financial_data_platform.orchestration.execution_tracking."
-        "connect_to_database",
+        "financial_data_platform.orchestration.execution_tracking.connect_to_database",
         return_value=connection,
     ):
-        with pytest.raises(
-            RuntimeError, match="running tracking record"
-        ):
+        with pytest.raises(RuntimeError, match="running tracking record"):
             update_pipeline_tracking_counters(
                 dag_id="financial_market_pipeline",
                 airflow_run_id="manual__missing_test",
@@ -284,8 +279,7 @@ def test_counter_snapshot_rejects_incomplete_metrics(monkeypatch):
     monkeypatch.setenv("POSTGRES_DB", "financial_market_test")
 
     with patch(
-        "financial_data_platform.orchestration.execution_tracking."
-        "connect_to_database"
+        "financial_data_platform.orchestration.execution_tracking.connect_to_database"
     ) as connection:
         with pytest.raises(ValueError, match="complete metric snapshot"):
             update_pipeline_tracking_counters(
@@ -310,8 +304,7 @@ def test_finalization_without_counters_preserves_existing_metrics(
     cursor.rowcount = 1
 
     with patch(
-        "financial_data_platform.orchestration.execution_tracking."
-        "connect_to_database",
+        "financial_data_platform.orchestration.execution_tracking.connect_to_database",
         return_value=connection,
     ):
         finish_pipeline_tracking(

@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from financial_data_platform.models.market_data import MarketDataRecord
 
+
 def test_read_gold_market_records_queries_one_asset():
     """Retrieve historical Gold observations for one source and symbol."""
 
@@ -34,9 +35,7 @@ def test_read_gold_market_records_queries_one_asset():
 def test_read_gold_market_records_reconstructs_market_data():
     """Convert PostgreSQL rows into canonical MarketDataRecord objects."""
 
-    extracted_at = datetime(
-        2026, 10, 9, 18, 0, tzinfo=timezone.utc
-    )
+    extracted_at = datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc)
 
     cursor = MagicMock()
     cursor.fetchall.return_value = [

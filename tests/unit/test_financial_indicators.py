@@ -126,10 +126,7 @@ def test_calculate_sma_7_insufficient_history():
 def test_calculate_sma_30():
     """Calculate SMA 30 using thirty closing prices."""
 
-    closing_prices = [
-        Decimal(str(price))
-        for price in range(1, 31)
-    ]
+    closing_prices = [Decimal(str(price)) for price in range(1, 31)]
 
     result = calculate_sma(
         closing_prices=closing_prices,
@@ -142,10 +139,7 @@ def test_calculate_sma_30():
 def test_calculate_sma_30_insufficient_history():
     """SMA 30 is unavailable with only 29 observations."""
 
-    closing_prices = [
-        Decimal(str(price))
-        for price in range(1, 30)
-    ]
+    closing_prices = [Decimal(str(price)) for price in range(1, 30)]
 
     result = calculate_sma(
         closing_prices=closing_prices,
@@ -158,10 +152,7 @@ def test_calculate_sma_30_insufficient_history():
 def test_calculate_sma_uses_latest_observations():
     """SMA uses the latest window, not the entire price history."""
 
-    closing_prices = [
-        Decimal(str(price))
-        for price in range(1, 11)
-    ]
+    closing_prices = [Decimal(str(price)) for price in range(1, 11)]
 
     result = calculate_sma(
         closing_prices=closing_prices,
@@ -202,9 +193,7 @@ def test_sort_market_records_by_observation_date():
             close=Decimal("102.00"),
             volume=1000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 10, 10, 18, 0, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 10, 10, 18, 0, tzinfo=timezone.utc),
         )
 
     records = [
@@ -237,9 +226,7 @@ def test_calculate_market_indicators_first_observation():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     result = calculate_market_indicators([record])
@@ -264,9 +251,7 @@ def test_calculate_market_indicators_second_observation():
         close=Decimal("100.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     second = MarketDataRecord(
@@ -278,9 +263,7 @@ def test_calculate_market_indicators_second_observation():
         close=Decimal("105.00"),
         volume=1100,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     results = calculate_market_indicators([first, second])
@@ -315,9 +298,7 @@ def test_calculate_market_indicators_sma_7():
                 close=closing_price,
                 volume=1000,
                 source="twelve_data",
-                extracted_at=datetime(
-                    2026, 10, 8, 18, 0, tzinfo=timezone.utc
-                ),
+                extracted_at=datetime(2026, 10, 8, 18, 0, tzinfo=timezone.utc),
             )
         )
 
@@ -354,9 +335,7 @@ def test_calculate_market_indicators_sma_30():
                 close=closing_price,
                 volume=1000,
                 source="twelve_data",
-                extracted_at=datetime(
-                    2026, 10, 1, 18, 0, tzinfo=timezone.utc
-                ),
+                extracted_at=datetime(2026, 10, 1, 18, 0, tzinfo=timezone.utc),
             )
         )
 
@@ -382,9 +361,7 @@ def test_calculate_market_indicators_separates_symbols():
         close=Decimal("100.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     records = [
@@ -438,9 +415,7 @@ def test_calculate_market_indicators_separates_sources():
         close=Decimal("100.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     records = [
@@ -476,10 +451,16 @@ def test_calculate_market_indicators_separates_sources():
     assert by_identity["alternative_source", date(2026, 10, 8)].price_change is None
 
     assert by_identity["twelve_data", date(2026, 10, 9)].price_change == Decimal("5.00")
-    assert by_identity["alternative_source", date(2026, 10, 9)].price_change == Decimal("10.00")
+    assert by_identity["alternative_source", date(2026, 10, 9)].price_change == Decimal(
+        "10.00"
+    )
 
-    assert by_identity["twelve_data", date(2026, 10, 9)].daily_return_pct == Decimal("5.00")
-    assert by_identity["alternative_source", date(2026, 10, 9)].daily_return_pct == Decimal("5.00")
+    assert by_identity["twelve_data", date(2026, 10, 9)].daily_return_pct == Decimal(
+        "5.00"
+    )
+    assert by_identity[
+        "alternative_source", date(2026, 10, 9)
+    ].daily_return_pct == Decimal("5.00")
 
 
 def test_calculate_market_indicators_rejects_duplicate_observations():
@@ -494,9 +475,7 @@ def test_calculate_market_indicators_rejects_duplicate_observations():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     duplicate = replace(
@@ -520,9 +499,7 @@ def test_calculate_market_indicators_independent_of_input_order():
         close=Decimal("100.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     first = base
@@ -539,13 +516,9 @@ def test_calculate_market_indicators_independent_of_input_order():
         close=Decimal("104.00"),
     )
 
-    chronological = calculate_market_indicators(
-        [first, second, third]
-    )
+    chronological = calculate_market_indicators([first, second, third])
 
-    shuffled = calculate_market_indicators(
-        [third, first, second]
-    )
+    shuffled = calculate_market_indicators([third, first, second])
 
     assert shuffled == chronological
 

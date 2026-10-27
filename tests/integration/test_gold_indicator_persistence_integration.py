@@ -20,6 +20,7 @@ from financial_data_platform.warehouse.gold_market_history import (
 )
 from unittest.mock import patch
 
+
 @pytest.mark.integration
 def test_indicator_integration_database_has_required_columns(monkeypatch):
     """Confirm that the test database supports all four indicators."""
@@ -146,9 +147,7 @@ def test_update_gold_indicators_is_idempotent(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -206,9 +205,7 @@ def test_update_gold_indicators_replaces_null_with_value(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     initial = MarketIndicators(
@@ -317,14 +314,10 @@ def test_stale_observation_cannot_overwrite_gold_indicators(monkeypatch):
             ensure_date(cursor, record.observation_date)
             insert_market_fact(cursor, record, asset_key)
 
-            assert update_gold_indicators(
-                cursor, asset_key, current_indicators
-            ) is True
+            assert update_gold_indicators(cursor, asset_key, current_indicators) is True
 
             with pytest.raises(ValueError, match="Stale market observation"):
-                update_gold_indicators(
-                    cursor, asset_key, stale_indicators
-                )
+                update_gold_indicators(cursor, asset_key, stale_indicators)
 
             cursor.execute(
                 """
@@ -361,9 +354,7 @@ def test_update_gold_indicators_rejects_missing_fact(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -413,16 +404,12 @@ def test_update_gold_indicators_rejects_stale_observation(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     )
 
     stale_record = replace(
         record,
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     stale_indicators = MarketIndicators(
@@ -472,9 +459,7 @@ def test_read_gold_market_records_from_postgresql(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     connection = connect_to_database()
@@ -517,9 +502,7 @@ def test_sma_7_uses_gold_history_across_batches(monkeypatch):
         close=Decimal("101.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     records = [
@@ -593,9 +576,7 @@ def test_historical_price_correction_recalculates_later_indicators(monkeypatch):
         close=Decimal("100.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 3, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 3, 18, 0, tzinfo=timezone.utc),
     )
 
     first = base
@@ -613,9 +594,7 @@ def test_historical_price_correction_recalculates_later_indicators(monkeypatch):
     corrected_second = replace(
         second,
         close=Decimal("104.00000000"),
-        extracted_at=datetime(
-            2026, 10, 3, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 3, 19, 0, tzinfo=timezone.utc),
     )
 
     connection = connect_to_database()
@@ -635,9 +614,7 @@ def test_historical_price_correction_recalculates_later_indicators(monkeypatch):
             calculate_and_persist_indicators(cursor, [first, second, third])
 
             # Apply a newer correction to the October 2 market fact.
-            assert insert_market_fact(
-                cursor, corrected_second, asset_key
-            ) == "update"
+            assert insert_market_fact(cursor, corrected_second, asset_key) == "update"
 
             # Recalculate using Gold's updated historical prices.
             calculate_and_persist_indicators(cursor, [corrected_second])
@@ -681,9 +658,7 @@ def test_atomic_gold_loading_persists_market_data_and_indicators(
         close=Decimal("100.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     second = replace(
@@ -768,9 +743,7 @@ def test_atomic_gold_loading_rolls_back_when_indicators_fail(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     with patch(
@@ -811,9 +784,7 @@ def test_atomic_gold_loading_retry_is_idempotent(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     try:
@@ -901,9 +872,7 @@ def test_atomic_gold_loading_recalculates_after_committed_correction(monkeypatch
         close=Decimal("100.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     second = replace(
@@ -915,21 +884,15 @@ def test_atomic_gold_loading_recalculates_after_committed_correction(monkeypatch
     corrected_first = replace(
         first,
         close=Decimal("104.00000000"),
-        extracted_at=datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     )
 
     try:
-        initial_counts = load_market_records_with_indicators(
-            [first, second]
-        )
+        initial_counts = load_market_records_with_indicators([first, second])
 
         assert initial_counts["market"]["inserted"] == 2
 
-        correction_counts = load_market_records_with_indicators(
-            [corrected_first]
-        )
+        correction_counts = load_market_records_with_indicators([corrected_first])
 
         assert correction_counts["market"]["updated"] == 1
 
@@ -992,9 +955,7 @@ def test_rejected_market_batch_rolls_back_all_changes(monkeypatch):
         close=Decimal("102.00000000"),
         volume=1000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     valid = base
@@ -1005,9 +966,7 @@ def test_rejected_market_batch_rolls_back_all_changes(monkeypatch):
     )
 
     with pytest.raises(ValueError, match="rejected"):
-        load_market_records_with_indicators(
-            [valid, conflicting]
-        )
+        load_market_records_with_indicators([valid, conflicting])
 
     # Verify the transaction inserted nothing permanently.
     with connect_to_database() as connection:

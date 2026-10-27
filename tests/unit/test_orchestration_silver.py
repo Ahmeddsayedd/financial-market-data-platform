@@ -12,10 +12,7 @@ from financial_data_platform.orchestration.silver import (
 )
 
 
-RAW_RELATIVE_PATH = (
-    "twelve_data/AAPL/2026/10/24/"
-    "20261024T160953206116Z.json"
-)
+RAW_RELATIVE_PATH = "twelve_data/AAPL/2026/10/24/20261024T160953206116Z.json"
 
 
 def write_raw_fixture(tmp_path, *, invalid=False):
@@ -101,8 +98,8 @@ def test_invalid_record_is_quarantined(tmp_path):
     assert report["rejection_rate"] == 1.0
     assert report["violation_counts"] == {"NEGATIVE_VOLUME": 1}
     assert [Path(path) for path in report["quarantine_paths"]] == [
-    Path(path) for path in result["quarantine_paths"]
-]
+        Path(path) for path in result["quarantine_paths"]
+    ]
 
 
 def test_missing_raw_file_fails(tmp_path):
@@ -216,9 +213,7 @@ def test_mixed_quality_report_reaches_orchestration(tmp_path):
     assert silver_table.num_rows == 1
 
     quarantined = json.loads(
-        Path(result["quarantine_paths"][0]).read_text(
-            encoding="utf-8"
-        )
+        Path(result["quarantine_paths"][0]).read_text(encoding="utf-8")
     )
 
     assert {item["code"] for item in quarantined["violations"]} == {

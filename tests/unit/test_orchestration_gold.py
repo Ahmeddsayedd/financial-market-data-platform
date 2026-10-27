@@ -50,12 +50,8 @@ def test_loads_selected_silver_file(tmp_path):
 
 
 def test_multiple_files_use_one_database_transaction(tmp_path):
-    root, first = create_silver_file(
-        tmp_path, "symbol=AAPL/year=2026/data.parquet"
-    )
-    _, second = create_silver_file(
-        tmp_path, "symbol=MSFT/year=2026/data.parquet"
-    )
+    root, first = create_silver_file(tmp_path, "symbol=AAPL/year=2026/data.parquet")
+    _, second = create_silver_file(tmp_path, "symbol=MSFT/year=2026/data.parquet")
 
     with (
         patch(
