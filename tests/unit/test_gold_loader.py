@@ -256,7 +256,6 @@ def test_load_market_records_rolls_back_on_database_failure():
     """A database error must roll back the entire batch."""
 
     connection = MagicMock()
-    cursor = connection.cursor.return_value.__enter__.return_value
 
     with (
         patch(

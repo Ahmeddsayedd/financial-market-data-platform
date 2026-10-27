@@ -85,7 +85,6 @@ def test_update_gold_indicators_updates_existing_fact():
 def test_update_gold_indicators_skips_identical_values():
     """Do not update a fact when all indicator values are unchanged."""
 
-    from unittest.mock import patch
 
     record = MarketDataRecord(
         symbol="AAPL",

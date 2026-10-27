@@ -16,6 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8,<9",
+    "ruff>=0.13,<1",
 ]
 
 [tool.setuptools.packages.find]
@@ -27,3 +28,10 @@ pythonpath = ["src"]
 markers = [
     "integration: tests requiring external services such as PostgreSQL",
 ]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

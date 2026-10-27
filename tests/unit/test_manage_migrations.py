@@ -1,18 +1,21 @@
 import hashlib
 import subprocess
-from scripts.manage_migrations import migration_status
 from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
+
 from scripts.manage_migrations import (
     MIGRATIONS_DIR,
-    discover_migrations,
     apply_migrations,
     build_migration_sql,
+    discover_migrations,
     execute_postgres_migration,
-    load_migration_history_sql,
     initialize_migration_history,
+    load_migration_history_sql,
+    migration_status,
     validate_migration_history,
 )
-from unittest.mock import Mock, patch
 
 
 def test_discovers_initial_gold_schema_migration():
@@ -32,8 +35,6 @@ def test_discovers_initial_gold_schema_migration():
 
     assert checksum == expected_checksum
     assert len(checksum) == 64
-
-import pytest
 
 
 def test_rejects_duplicate_migration_versions(tmp_path, monkeypatch):
