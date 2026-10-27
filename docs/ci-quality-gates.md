@@ -124,3 +124,68 @@ python -m pytest -q -m "not integration"
 ```
 
 Review reported errors before making changes.
+
+
+## Automated PostgreSQL Integration Tests
+
+GitHub Actions runs PostgreSQL-backed integration tests in a
+dedicated job on pull requests and pushes to `main`.
+
+### CI Environment
+
+The integration-test job uses:
+
+- Python 3.11.
+- PostgreSQL 17 through Docker Compose.
+- The isolated `financial_market_test` database.
+- Temporary CI-only database credentials.
+- The existing SQL migration system.
+
+The workflow creates the required Docker network, starts
+PostgreSQL, initializes migration history, and applies the
+existing Gold warehouse migrations.
+
+It then executes:
+
+```bash
+python -m pytest -q -m integration
+```
+
+The integration job is independent of the Ruff and unit-test
+jobs.
+
+### Local Integration Tests
+
+Local tests continue to use the project's private `.env` file
+and dedicated PostgreSQL test database.
+
+Run the complete test suite using:
+
+```bash
+python scripts/run_tests.py
+```
+
+Never execute database integration tests against the primary
+warehouse.
+
+### CI Database Safety
+
+- CI does not require production database credentials.
+- The temporary PostgreSQL database exists only for the CI run.
+- CI does not make live Twelve Data API requests.
+- Tests must verify they are using `financial_market_test`.
+- The existing targeted cleanup and database safety checks
+  remain in place.
+- The temporary Docker environment is removed after execution.
+
+### Troubleshooting
+
+If the integration job fails:
+
+1. Check whether Docker Compose started successfully.
+2. Check the PostgreSQL readiness and database identity steps.
+3. Review migration initialization and application logs.
+4. Identify the first failing integration test.
+5. Reproduce the failure locally against `financial_market_test`.
+
+Do not bypass database identity checks to make CI pass.
