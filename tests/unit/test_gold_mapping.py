@@ -1,12 +1,13 @@
-from datetime import date
+from datetime import date, datetime, timezone
+from decimal import Decimal
 
+from financial_data_platform.models.market_data import MarketDataRecord
 from financial_data_platform.warehouse.gold_mapping import (
-    to_date_key,
-    to_date_dimension,
     to_asset_identity,
+    to_date_dimension,
+    to_date_key,
     to_market_fact,
 )
-from financial_data_platform.models.market_data import MarketDataRecord
 
 
 def test_to_date_key_converts_observation_date():
@@ -53,9 +54,6 @@ def test_to_date_dimension_handles_new_year():
         "day_of_week": 5,
     }
 
-
-from datetime import datetime, timezone
-from decimal import Decimal
 
 
 def test_to_asset_identity_preserves_source_and_symbol():

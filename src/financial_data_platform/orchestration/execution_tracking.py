@@ -1,7 +1,7 @@
 """PostgreSQL execution tracking for Airflow DAG runs."""
 
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID, NAMESPACE_URL, uuid5
 
 from financial_data_platform.warehouse.db import connect_to_database

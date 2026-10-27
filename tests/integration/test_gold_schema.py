@@ -1,4 +1,3 @@
-import os
 import psycopg
 import subprocess
 import pytest

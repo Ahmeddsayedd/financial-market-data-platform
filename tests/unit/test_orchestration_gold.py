@@ -1,6 +1,5 @@
 """Tests for the Silver-to-Gold orchestration adapter."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
