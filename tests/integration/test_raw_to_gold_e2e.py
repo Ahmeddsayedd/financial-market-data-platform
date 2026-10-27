@@ -62,9 +62,7 @@ def isolated_asset(monkeypatch):
             with connection.cursor() as cursor:
                 cursor.execute("SELECT current_database()")
                 if cursor.fetchone()[0] != TEST_DATABASE:
-                    raise RuntimeError(
-                        "Refusing cleanup outside the test database"
-                    )
+                    raise RuntimeError("Refusing cleanup outside the test database")
 
                 cursor.execute(
                     """
@@ -102,9 +100,7 @@ def run_raw_to_silver(tmp_path, symbol, values):
     raw_root = tmp_path / "raw"
     silver_root = tmp_path / "silver"
 
-    relative_name = (
-        f"twelve_data/{symbol}/2026/10/24/{RAW_FILENAME}"
-    )
+    relative_name = f"twelve_data/{symbol}/2026/10/24/{RAW_FILENAME}"
     raw_path = raw_root / relative_name
     raw_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -123,9 +119,7 @@ def run_raw_to_silver(tmp_path, symbol, values):
         raw_base_dir=raw_root,
         silver_base_dir=silver_root,
         quarantine_base_dir=tmp_path / "quarantine",
-        detected_at=datetime(
-            2026, 10, 24, 18, 0, tzinfo=timezone.utc
-        ),
+        detected_at=datetime(2026, 10, 24, 18, 0, tzinfo=timezone.utc),
     )
 
     return result, silver_root
@@ -212,8 +206,15 @@ def test_valid_raw_observations_reach_gold(
         Decimal("98.00000000"),
     )
     assert all(
-        row[6] == datetime(
-            2026, 10, 24, 16, 9, 53, 206116,
+        row[6]
+        == datetime(
+            2026,
+            10,
+            24,
+            16,
+            9,
+            53,
+            206116,
             tzinfo=timezone.utc,
         )
         for row in rows
@@ -251,13 +252,12 @@ def test_invalid_raw_observation_never_reaches_gold(
     assert len(silver["quarantine_paths"]) == 1
 
     quarantined = json.loads(
-        Path(silver["quarantine_paths"][0]).read_text(
-            encoding="utf-8"
-        )
+        Path(silver["quarantine_paths"][0]).read_text(encoding="utf-8")
     )
-    assert {
-        item["code"] for item in quarantined["violations"]
-    } == {"NEGATIVE_VOLUME", "NON_FINITE_CLOSE"}
+    assert {item["code"] for item in quarantined["violations"]} == {
+        "NEGATIVE_VOLUME",
+        "NON_FINITE_CLOSE",
+    }
 
     gold = load_result_to_gold(silver, silver_root)
 
@@ -282,19 +282,11 @@ def test_replaying_raw_file_does_not_duplicate_gold_facts(
         observation("2026-10-22", close="103.00"),
     ]
 
-    first_silver, silver_root = run_raw_to_silver(
-        tmp_path, symbol, values
-    )
-    first_gold = load_result_to_gold(
-        first_silver, silver_root
-    )
+    first_silver, silver_root = run_raw_to_silver(tmp_path, symbol, values)
+    first_gold = load_result_to_gold(first_silver, silver_root)
 
-    second_silver, silver_root = run_raw_to_silver(
-        tmp_path, symbol, values
-    )
-    second_gold = load_result_to_gold(
-        second_silver, silver_root
-    )
+    second_silver, silver_root = run_raw_to_silver(tmp_path, symbol, values)
+    second_gold = load_result_to_gold(second_silver, silver_root)
 
     assert first_gold["inserted"] == 2
     assert second_gold["inserted"] == 0
@@ -302,7 +294,5 @@ def test_replaying_raw_file_does_not_duplicate_gold_facts(
     assert second_gold["unchanged"] == 2
     assert second_gold["rejected"] == 0
 
-    assert first_silver["quality_report"] == (
-        second_silver["quality_report"]
-    )
+    assert first_silver["quality_report"] == (second_silver["quality_report"])
     assert len(read_gold_facts(symbol)) == 2

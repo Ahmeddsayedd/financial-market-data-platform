@@ -9,12 +9,7 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DAG_FILE = (
-    PROJECT_ROOT
-    / "airflow"
-    / "dags"
-    / "financial_market_pipeline.py"
-)
+DAG_FILE = PROJECT_ROOT / "airflow" / "dags" / "financial_market_pipeline.py"
 
 EXPECTED_TASKS = {
     "check_pipeline_configuration",
@@ -36,9 +31,7 @@ def load_dag_ast() -> ast.Module:
 def get_function_names() -> set[str]:
     """Extract declared functions from the DAG file."""
     return {
-        node.name
-        for node in load_dag_ast().body
-        if isinstance(node, ast.FunctionDef)
+        node.name for node in load_dag_ast().body if isinstance(node, ast.FunctionDef)
     }
 
 
@@ -67,8 +60,7 @@ def test_all_tasks_use_taskflow_decorator():
     task_functions = {
         node.name: node
         for node in load_dag_ast().body
-        if isinstance(node, ast.FunctionDef)
-        and node.name in EXPECTED_TASKS
+        if isinstance(node, ast.FunctionDef) and node.name in EXPECTED_TASKS
     }
 
     for function in task_functions.values():
@@ -104,18 +96,9 @@ def test_taskflow_dependency_chain():
     """Task outputs must connect the three stages in order."""
     source = load_dag_source()
 
-    assert (
-        "configuration = check_pipeline_configuration()"
-        in source
-    )
-    assert (
-        "prepared_run = prepare_pipeline_run(configuration)"
-        in source
-    )
-    assert (
-        "completion_summary = summarize_pipeline_run(prepared_run)"
-        in source
-    )
+    assert "configuration = check_pipeline_configuration()" in source
+    assert "prepared_run = prepare_pipeline_run(configuration)" in source
+    assert "completion_summary = summarize_pipeline_run(prepared_run)" in source
 
 
 def test_no_external_data_dependencies():

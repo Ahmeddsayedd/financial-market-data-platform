@@ -85,7 +85,6 @@ def test_client_rejects_empty_api_key():
         raise AssertionError("Expected ValueError")
 
 
-
 def test_fetch_daily_time_series_rejects_non_retryable_client_error():
     mock_response = Mock()
     mock_response.status_code = 400
@@ -325,7 +324,6 @@ def test_fetch_daily_time_series_rejects_provider_error_payload():
         client.fetch_daily_time_series("INVALID")
 
 
-
 def test_fetch_daily_time_series_rejects_malformed_json():
     mock_response = Mock()
     mock_response.status_code = 200
@@ -344,7 +342,6 @@ def test_fetch_daily_time_series_rejects_malformed_json():
         match="invalid JSON",
     ):
         client.fetch_daily_time_series("AAPL")
-
 
 
 def test_fetch_daily_time_series_waits_between_retries():

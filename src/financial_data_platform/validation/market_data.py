@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from financial_data_platform.models.market_data import MarketDataRecord
 
+
 @dataclass(frozen=True)
 class ValidationViolation:
     """Describe one data-quality violation."""
@@ -71,9 +72,7 @@ def validate_market_data_record(
         )
 
     # Only perform ordering comparisons on finite values.
-    high_and_low_finite = (
-        record.high.is_finite() and record.low.is_finite()
-    )
+    high_and_low_finite = record.high.is_finite() and record.low.is_finite()
 
     if high_and_low_finite:
         if record.high < record.low:
@@ -86,10 +85,7 @@ def validate_market_data_record(
             )
 
         else:
-            if (
-                record.open.is_finite()
-                and not record.low <= record.open <= record.high
-            ):
+            if record.open.is_finite() and not record.low <= record.open <= record.high:
                 violations.append(
                     ValidationViolation(
                         code="OPEN_OUTSIDE_RANGE",

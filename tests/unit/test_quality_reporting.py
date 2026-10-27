@@ -71,9 +71,7 @@ def test_multiple_violations_count_one_rejected_record(valid_record):
         "NEGATIVE_VOLUME": 1,
         "NON_FINITE_CLOSE": 1,
     }
-    assert report["quarantine_paths"] == [
-        "quarantine/invalid.json"
-    ]
+    assert report["quarantine_paths"] == ["quarantine/invalid.json"]
 
 
 def test_violation_counts_aggregate_across_records(valid_record):
@@ -87,9 +85,7 @@ def test_violation_counts_aggregate_across_records(valid_record):
         observation_date=date(2026, 10, 7),
         volume=-2,
     )
-    batch = partition_market_data_records(
-        [valid_record, first, second]
-    )
+    batch = partition_market_data_records([valid_record, first, second])
 
     report = build_quality_report(batch)
 

@@ -2,7 +2,7 @@ import pytest
 import psycopg
 
 from financial_data_platform.warehouse.db import (
-    get_database_config, 
+    get_database_config,
     connect_to_database,
 )
 from unittest.mock import patch

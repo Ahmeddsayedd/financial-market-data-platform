@@ -29,9 +29,7 @@ def test_discovers_initial_gold_schema_migration():
     assert path.name == "001_create_gold_schema.sql"
     assert path.parent == MIGRATIONS_DIR
 
-    expected_checksum = hashlib.sha256(
-        path.read_bytes()
-    ).hexdigest()
+    expected_checksum = hashlib.sha256(path.read_bytes()).hexdigest()
 
     assert checksum == expected_checksum
     assert len(checksum) == 64
@@ -58,6 +56,7 @@ def test_rejects_duplicate_migration_versions(tmp_path, monkeypatch):
 
     with pytest.raises(ValueError, match="Duplicate migration version"):
         discover_migrations()
+
 
 def test_migration_status_detects_pending_and_applied_versions():
     migrations = [
@@ -388,9 +387,7 @@ def test_build_migration_sql_acquires_lock_before_schema_changes(tmp_path):
 
     assert "pg_advisory_xact_lock" in sql
 
-    assert sql.index("pg_advisory_xact_lock") < sql.index(
-        "CREATE TABLE example"
-    )
+    assert sql.index("pg_advisory_xact_lock") < sql.index("CREATE TABLE example")
 
 
 def test_build_migration_sql_rechecks_history_after_lock(tmp_path):

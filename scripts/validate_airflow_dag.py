@@ -5,7 +5,7 @@ Run this script inside the Airflow Docker container.
 
 from pathlib import Path
 
-from airflow.models.dagbag import DagBag # pyright: ignore[reportMissingImports]
+from airflow.models.dagbag import DagBag  # pyright: ignore[reportMissingImports]
 
 
 DAG_ID = "financial_market_pipeline"
@@ -31,9 +31,7 @@ def main() -> None:
         include_examples=False,
     )
 
-    assert not dag_bag.import_errors, (
-        f"DAG import errors: {dag_bag.import_errors}"
-    )
+    assert not dag_bag.import_errors, f"DAG import errors: {dag_bag.import_errors}"
 
     dag = dag_bag.get_dag(DAG_ID)
     assert dag is not None, f"DAG not found: {DAG_ID}"
@@ -46,8 +44,7 @@ def main() -> None:
     for task_id, expected_downstream in EXPECTED_DEPENDENCIES.items():
         actual_downstream = dag.get_task(task_id).downstream_task_ids
         assert actual_downstream == expected_downstream, (
-            f"{task_id}: expected {expected_downstream}, "
-            f"got {actual_downstream}"
+            f"{task_id}: expected {expected_downstream}, got {actual_downstream}"
         )
 
     ingestion_task = dag.get_task("ingest_raw_market_data")

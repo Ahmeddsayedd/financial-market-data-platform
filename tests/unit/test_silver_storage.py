@@ -26,12 +26,7 @@ def test_writes_single_record_to_symbol_year_partition(tmp_path):
 
     paths = writer.write([record])
 
-    expected_path = (
-        tmp_path
-        / "symbol=AAPL"
-        / "year=2026"
-        / "data.parquet"
-    )
+    expected_path = tmp_path / "symbol=AAPL" / "year=2026" / "data.parquet"
 
     assert paths == [expected_path]
     assert expected_path.exists()
@@ -39,7 +34,6 @@ def test_writes_single_record_to_symbol_year_partition(tmp_path):
     table = pq.ParquetFile(expected_path).read()
 
     assert table.num_rows == 1
-
 
 
 def test_writes_records_with_explicit_silver_schema(tmp_path):
@@ -82,7 +76,6 @@ def test_writes_records_with_explicit_silver_schema(tmp_path):
     assert table.schema == expected_schema
 
 
-
 def test_writes_multiple_records_to_same_partition(tmp_path):
     records = [
         MarketDataRecord(
@@ -94,9 +87,7 @@ def test_writes_multiple_records_to_same_partition(tmp_path):
             close=Decimal("254.00"),
             volume=1_000_000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc),
         ),
         MarketDataRecord(
             symbol="AAPL",
@@ -107,9 +98,7 @@ def test_writes_multiple_records_to_same_partition(tmp_path):
             close=Decimal("257.00"),
             volume=1_100_000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc),
         ),
     ]
 
@@ -117,12 +106,7 @@ def test_writes_multiple_records_to_same_partition(tmp_path):
 
     paths = writer.write(records)
 
-    expected_path = (
-        tmp_path
-        / "symbol=AAPL"
-        / "year=2026"
-        / "data.parquet"
-    )
+    expected_path = tmp_path / "symbol=AAPL" / "year=2026" / "data.parquet"
 
     assert paths == [expected_path]
 
@@ -133,7 +117,6 @@ def test_writes_multiple_records_to_same_partition(tmp_path):
         date(2026, 10, 5),
         date(2026, 10, 6),
     ]
-
 
 
 def test_writes_records_to_multiple_symbol_year_partitions(tmp_path):
@@ -147,9 +130,7 @@ def test_writes_records_to_multiple_symbol_year_partitions(tmp_path):
             close=Decimal("204.00"),
             volume=900_000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 1, 2, 12, 0, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 1, 2, 12, 0, tzinfo=timezone.utc),
         ),
         MarketDataRecord(
             symbol="AAPL",
@@ -160,9 +141,7 @@ def test_writes_records_to_multiple_symbol_year_partitions(tmp_path):
             close=Decimal("207.00"),
             volume=1_000_000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 1, 3, 12, 0, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 1, 3, 12, 0, tzinfo=timezone.utc),
         ),
         MarketDataRecord(
             symbol="MSFT",
@@ -173,9 +152,7 @@ def test_writes_records_to_multiple_symbol_year_partitions(tmp_path):
             close=Decimal("454.00"),
             volume=800_000,
             source="twelve_data",
-            extracted_at=datetime(
-                2026, 1, 3, 12, 0, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 1, 3, 12, 0, tzinfo=timezone.utc),
         ),
     ]
 
@@ -196,7 +173,6 @@ def test_writes_records_to_multiple_symbol_year_partitions(tmp_path):
         assert pq.ParquetFile(path).read().num_rows == 1
 
 
-
 def test_preserves_existing_records_when_writing_to_existing_partition(tmp_path):
     writer = SilverWriter(tmp_path)
 
@@ -209,9 +185,7 @@ def test_preserves_existing_records_when_writing_to_existing_partition(tmp_path)
         close=Decimal("254.00"),
         volume=1_000_000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc),
     )
 
     second_record = MarketDataRecord(
@@ -223,9 +197,7 @@ def test_preserves_existing_records_when_writing_to_existing_partition(tmp_path)
         close=Decimal("257.00"),
         volume=1_100_000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc),
     )
 
     writer.write([first_record])
@@ -240,7 +212,6 @@ def test_preserves_existing_records_when_writing_to_existing_partition(tmp_path)
     ]
 
 
-
 def test_replaces_existing_record_with_same_identity(tmp_path):
     writer = SilverWriter(tmp_path)
 
@@ -253,9 +224,7 @@ def test_replaces_existing_record_with_same_identity(tmp_path):
         close=Decimal("254.00"),
         volume=1_000_000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc),
     )
 
     corrected_record = MarketDataRecord(
@@ -267,9 +236,7 @@ def test_replaces_existing_record_with_same_identity(tmp_path):
         close=Decimal("259.00"),
         volume=1_200_000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc),
     )
 
     writer.write([original_record])
@@ -285,10 +252,7 @@ def test_replaces_existing_record_with_same_identity(tmp_path):
     assert row["observation_date"] == date(2026, 10, 5)
     assert row["close"] == Decimal("259.00000000")
     assert row["volume"] == 1_200_000
-    assert row["extracted_at"] == datetime(
-        2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc
-    )
-
+    assert row["extracted_at"] == datetime(2026, 10, 7, 18, 30, 45, tzinfo=timezone.utc)
 
 
 def test_repeated_identical_write_is_idempotent(tmp_path):
@@ -301,9 +265,7 @@ def test_repeated_identical_write_is_idempotent(tmp_path):
         close=Decimal("254.00"),
         volume=1_000_000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc),
     )
 
     writer = SilverWriter(tmp_path)
@@ -316,9 +278,7 @@ def test_repeated_identical_write_is_idempotent(tmp_path):
     table = pq.ParquetFile(first_paths[0]).read()
 
     assert table.num_rows == 1
-    assert table.column("observation_date").to_pylist() == [
-        date(2026, 10, 5)
-    ]
+    assert table.column("observation_date").to_pylist() == [date(2026, 10, 5)]
 
 
 def test_empty_input_writes_nothing(tmp_path):
@@ -328,7 +288,6 @@ def test_empty_input_writes_nothing(tmp_path):
 
     assert paths == []
     assert list(tmp_path.rglob("*.parquet")) == []
-
 
 
 @pytest.mark.parametrize(
@@ -350,9 +309,7 @@ def test_rejects_unsafe_symbol_path_components(tmp_path, symbol):
         close=Decimal("254.00"),
         volume=1_000_000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 6, 18, 30, 45, tzinfo=timezone.utc),
     )
 
     writer = SilverWriter(tmp_path)

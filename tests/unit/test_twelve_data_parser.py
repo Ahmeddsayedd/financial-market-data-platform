@@ -64,6 +64,7 @@ def test_parse_time_series_rejects_missing_values():
     with pytest.raises(TwelveDataParseError):
         parse_time_series(payload, extracted_at=extracted_at)
 
+
 def test_parse_time_series_rejects_provider_error_response():
     payload = {
         "code": 404,
@@ -118,7 +119,7 @@ def test_parse_time_series_rejects_missing_observation_field():
                 "open": "227.79000",
                 "high": "229.30000",
                 "low": "225.45000",
-                "volume": "48765000"
+                "volume": "48765000",
             }
         ],
         "status": "ok",
@@ -170,6 +171,7 @@ def test_parse_time_series_rejects_invalid_date():
     with pytest.raises(TwelveDataParseError):
         parse_time_series(payload, extracted_at=extracted_at)
 
+
 def test_parse_time_series_rejects_naive_extraction_timestamp():
     payload = load_fixture("valid_time_series.json")
     extracted_at = datetime(2026, 9, 26, 20, 30)
@@ -199,9 +201,7 @@ def test_parser_rejects_non_integer_volumes(invalid_volume):
     with pytest.raises(TwelveDataParseError):
         parse_time_series(
             payload,
-            extracted_at=datetime(
-                2026, 9, 26, 20, 30, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 9, 26, 20, 30, tzinfo=timezone.utc),
         )
 
 
@@ -223,9 +223,7 @@ def test_parser_preserves_exact_integer_volumes(
 
     records = parse_time_series(
         payload,
-        extracted_at=datetime(
-            2026, 9, 26, 20, 30, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 9, 26, 20, 30, tzinfo=timezone.utc),
     )
 
     assert records[0].volume == expected
@@ -242,9 +240,7 @@ def test_parser_rejects_duplicate_observation_dates():
     ):
         parse_time_series(
             payload,
-            extracted_at=datetime(
-                2026, 9, 26, 20, 30, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 9, 26, 20, 30, tzinfo=timezone.utc),
         )
 
 
@@ -263,7 +259,5 @@ def test_parser_rejects_non_object_payloads(invalid_payload):
     ):
         parse_time_series(
             invalid_payload,
-            extracted_at=datetime(
-                2026, 9, 26, 20, 30, tzinfo=timezone.utc
-            ),
+            extracted_at=datetime(2026, 9, 26, 20, 30, tzinfo=timezone.utc),
         )

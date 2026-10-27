@@ -3,6 +3,7 @@
 Issue #31: Demonstrate task orchestration without accessing
 external financial APIs or modifying the Gold warehouse.
 """
+
 import os
 from pathlib import Path
 
@@ -51,6 +52,7 @@ def start_execution_tracking() -> str:
 
     print(f"Execution tracking initialized: {run_id}")
     return str(run_id)
+
 
 @task(dag=dag)
 def check_pipeline_configuration() -> dict[str, str]:
@@ -123,17 +125,14 @@ def ingest_raw_market_data(
     # Both environmental permission and explicit DAG-run authorization
     # are required before any real Twelve Data request.
     environment_enabled = (
-        os.getenv("ENABLE_TWELVE_DATA_INGESTION", "false").lower()
-        == "true"
+        os.getenv("ENABLE_TWELVE_DATA_INGESTION", "false").lower() == "true"
     )
 
     context = get_current_context()
     dag_run = context["dag_run"]
     run_configuration = dag_run.conf or {}
 
-    run_authorized = (
-        run_configuration.get("allow_live_ingestion") is True
-    )
+    run_authorized = run_configuration.get("allow_live_ingestion") is True
 
     if not (environment_enabled and run_authorized):
         print("Live Twelve Data ingestion disabled; no request sent.")
@@ -154,6 +153,7 @@ def ingest_raw_market_data(
         symbols=("AAPL",),
         raw_base_dir=Path("/opt/financial-data/raw"),
     )
+
 
 @task(dag=dag, retries=0)
 def process_raw_to_silver(
@@ -177,26 +177,17 @@ def process_raw_to_silver(
 
     if explicit_path is not None:
         if not isinstance(explicit_path, str) or not explicit_path:
-            raise ValueError(
-                "raw_relative_path must be a nonempty string"
-            )
+            raise ValueError("raw_relative_path must be a nonempty string")
         selected_path = explicit_path
     elif ingestion_result["status"] == "success":
         raw_paths = ingestion_result["raw_paths"]
 
         if not isinstance(raw_paths, list) or len(raw_paths) != 1:
-            raise ValueError(
-                "Exactly one ingested Raw path is required"
-            )
+            raise ValueError("Exactly one ingested Raw path is required")
 
-        selected_path = str(
-            Path(raw_paths[0]).relative_to(raw_base_dir)
-        )
+        selected_path = str(Path(raw_paths[0]).relative_to(raw_base_dir))
     else:
-        print(
-            "Raw-to-Silver processing disabled: "
-            "no Raw file was selected."
-        )
+        print("Raw-to-Silver processing disabled: no Raw file was selected.")
         return {
             "status": "disabled",
             "total_records": 0,
@@ -228,6 +219,7 @@ def process_raw_to_silver(
 
     return result
 
+
 @task(dag=dag, retries=0)
 def load_silver_to_gold(
     silver_result: dict[str, object],
@@ -237,9 +229,7 @@ def load_silver_to_gold(
     context = get_current_context()
     run_configuration = context["dag_run"].conf or {}
 
-    environment_enabled = (
-        os.getenv("ENABLE_GOLD_LOADING", "false").lower() == "true"
-    )
+    environment_enabled = os.getenv("ENABLE_GOLD_LOADING", "false").lower() == "true"
     run_authorized = run_configuration.get("allow_gold_loading") is True
 
     if not (environment_enabled and run_authorized):
@@ -253,9 +243,7 @@ def load_silver_to_gold(
     # Additional development safeguard: never write to the main
     # Gold database during Issue #37.
     if os.getenv("POSTGRES_DB") != "financial_market_test":
-        raise ValueError(
-            "Gold loading is restricted to financial_market_test"
-        )
+        raise ValueError("Gold loading is restricted to financial_market_test")
 
     silver_root = Path("/opt/financial-data/silver")
 
@@ -265,14 +253,9 @@ def load_silver_to_gold(
         if (
             not isinstance(explicit_paths, list)
             or not explicit_paths
-            or not all(
-                isinstance(path, str) and path
-                for path in explicit_paths
-            )
+            or not all(isinstance(path, str) and path for path in explicit_paths)
         ):
-            raise ValueError(
-                "silver_relative_paths must be a nonempty list of strings"
-            )
+            raise ValueError("silver_relative_paths must be a nonempty list of strings")
 
         selected_paths = explicit_paths
 
@@ -280,13 +263,10 @@ def load_silver_to_gold(
         absolute_paths = silver_result["silver_paths"]
 
         if not isinstance(absolute_paths, list) or not absolute_paths:
-            raise ValueError(
-                "Successful Silver processing must provide output paths"
-            )
+            raise ValueError("Successful Silver processing must provide output paths")
 
         selected_paths = [
-            str(Path(path).relative_to(silver_root))
-            for path in absolute_paths
+            str(Path(path).relative_to(silver_root)) for path in absolute_paths
         ]
 
     else:
@@ -323,6 +303,7 @@ def load_silver_to_gold(
     )
 
     return result
+
 
 # TaskFlow automatically creates dependencies when one task's
 # output is passed as another task's argument.

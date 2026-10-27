@@ -52,10 +52,7 @@ def process_raw_file_to_silver(
 
     processing_time = detected_at or datetime.now(timezone.utc)
 
-    if (
-        processing_time.tzinfo is None
-        or processing_time.utcoffset() is None
-    ):
+    if processing_time.tzinfo is None or processing_time.utcoffset() is None:
         raise ValueError("detected_at must be timezone-aware")
 
     result = process_raw_market_data(
@@ -73,8 +70,6 @@ def process_raw_file_to_silver(
         "valid_count": result.valid_count,
         "invalid_count": result.invalid_count,
         "silver_paths": [str(path) for path in result.silver_paths],
-        "quarantine_paths": [
-            str(path) for path in result.quarantine_paths
-        ],
+        "quarantine_paths": [str(path) for path in result.quarantine_paths],
         "quality_report": result.quality_report,
     }

@@ -1,4 +1,5 @@
 """Load validated market observations into the PostgreSQL Gold warehouse."""
+
 from datetime import date
 from financial_data_platform.models.market_data import MarketDataRecord
 from financial_data_platform.warehouse.gold_mapping import (
@@ -8,6 +9,7 @@ from financial_data_platform.warehouse.gold_mapping import (
 from financial_data_platform.warehouse.gold_conflicts import decide_fact_action
 from financial_data_platform.warehouse.db import connect_to_database
 from financial_data_platform.storage.silver_reader import read_silver_parquet
+
 
 def ensure_asset(cursor, source: str, symbol: str) -> int:
     """Insert an asset or return its existing surrogate key."""
@@ -162,9 +164,7 @@ def insert_market_fact(
         )
 
         if cursor.rowcount != 1:
-            raise RuntimeError(
-                "Gold fact update did not affect exactly one row"
-            )
+            raise RuntimeError("Gold fact update did not affect exactly one row")
 
         return "update"
 

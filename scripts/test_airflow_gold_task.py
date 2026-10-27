@@ -31,9 +31,7 @@ MOCK_RESULT = {
     "updated": 0,
     "unchanged": 0,
     "rejected": 0,
-    "silver_paths": [
-        "/opt/financial-data/silver/" + SILVER_RELATIVE_PATH
-    ],
+    "silver_paths": ["/opt/financial-data/silver/" + SILVER_RELATIVE_PATH],
 }
 
 DISABLED_SILVER = {
@@ -54,17 +52,13 @@ def run_case(
     if explicit_paths is not None:
         run_conf["silver_relative_paths"] = explicit_paths
 
-    context = {
-        "dag_run": SimpleNamespace(conf=run_conf)
-    }
+    context = {"dag_run": SimpleNamespace(conf=run_conf)}
 
     with (
         patch.dict(
             os.environ,
             {
-                "ENABLE_GOLD_LOADING": (
-                    "true" if environment_enabled else "false"
-                ),
+                "ENABLE_GOLD_LOADING": ("true" if environment_enabled else "false"),
                 "POSTGRES_DB": database,
             },
         ),
@@ -74,8 +68,7 @@ def run_case(
             return_value=context,
         ),
         patch(
-            "financial_data_platform.orchestration.gold."
-            "load_silver_paths_to_gold",
+            "financial_data_platform.orchestration.gold.load_silver_paths_to_gold",
             return_value=MOCK_RESULT,
         ) as mocked_loader,
     ):
@@ -122,9 +115,7 @@ result, loader = run_case(
 )
 assert result == MOCK_RESULT
 loader.assert_called_once()
-assert loader.call_args.kwargs["relative_paths"] == [
-    SILVER_RELATIVE_PATH
-]
+assert loader.call_args.kwargs["relative_paths"] == [SILVER_RELATIVE_PATH]
 print("PASS: Both permissions present — mocked Gold load")
 
 

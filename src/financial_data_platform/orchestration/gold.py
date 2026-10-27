@@ -44,9 +44,7 @@ def load_silver_paths_to_gold(
             raise ValueError("Selected Silver file must be Parquet")
 
         if not resolved_path.is_file():
-            raise FileNotFoundError(
-                f"Silver file does not exist: {relative_name}"
-            )
+            raise FileNotFoundError(f"Silver file does not exist: {relative_name}")
 
         resolved_paths.append(resolved_path)
 

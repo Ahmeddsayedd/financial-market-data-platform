@@ -3,79 +3,124 @@
 
 ## Overview
 
-The project uses GitHub Actions to validate pull requests
-and pushes to `main`.
+The Financial Market Data Platform uses GitHub Actions to
+automatically verify code quality and run database-independent
+tests on pull requests and pushes to `main`.
 
-The initial workflow runs two independent checks:
+The CI workflow includes:
 
-1. Ruff linting.
-2. Database-independent pytest tests.
+- Ruff linting.
+- Ruff formatting verification.
+- Database-independent pytest tests.
 
 ## Local Setup
 
-Install development dependencies:
+Install the project's development dependencies:
 
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-## Ruff Lint
+## Ruff Linting
+
+Check Python code for lint violations:
 
 ```bash
 python -m ruff check .
 ```
 
-The lint command reports issues without modifying files.
+This command reports issues without modifying files.
 
-## Unit Tests
+## Ruff Formatting
+
+Check whether all Python files follow the configured
+formatting standard:
+
+```bash
+python -m ruff format --check .
+```
+
+The formatting check does not modify files.
+
+To format Python files locally, run:
+
+```bash
+python -m ruff format .
+```
+
+This command modifies files to match the Ruff formatting
+standard.
+
+Review the changes before committing:
+
+```bash
+git diff --stat
+git diff --check
+git diff
+```
+
+GitHub Actions enforces both linting and formatting on
+pull requests and pushes to `main`.
+
+## Database-Independent Tests
+
+Run unit tests without requiring PostgreSQL or Docker:
 
 ```bash
 python -m pytest -q -m "not integration"
 ```
 
-Integration tests are excluded using the registered
-pytest `integration` marker.
+Tests marked `integration` are excluded.
 
 ## PostgreSQL Integration Tests
 
-PostgreSQL integration tests are not executed by the
-initial GitHub Actions workflow.
+PostgreSQL integration tests are currently executed locally
+using the isolated test database `financial_market_test`.
 
-They require a dedicated PostgreSQL test environment
-and database-safety configuration.
+Make sure PostgreSQL is running and the local `.env` file
+contains the correct test database configuration.
 
-To execute integration tests locally, follow the
-project's existing integration-test prerequisites
-and use the local test runner:
+Run the complete test suite:
 
 ```bash
-python scripts/run_tests.py tests/integration -v
+python scripts/run_tests.py
 ```
 
-The runner requires the local `.env` configuration.
+The test runner loads the local `.env` file.
 
-Never point integration tests at the production warehouse.
-The expected isolated database is `financial_market_test`.
+Never run integration tests against the production or
+primary Gold warehouse.
+
+Automated PostgreSQL integration testing in GitHub Actions
+will be implemented in a separate M7 issue.
 
 ## Security
 
-The initial CI workflow:
-
-- Does not use production credentials.
-- Does not require Twelve Data API credentials.
-- Does not perform live market ingestion.
-- Does not modify the Gold warehouse.
-- Uses read-only GitHub repository permissions.
+- Do not commit `.env` files or database credentials.
+- Do not use production database credentials in CI.
+- Do not make live Twelve Data API requests during tests.
+- Use only the isolated `financial_market_test` database
+  for PostgreSQL integration tests.
+- Use minimal GitHub Actions permissions.
 
 ## Troubleshooting
 
-If Ruff fails, inspect the reported filename and line
-number and fix the issue locally.
+If Ruff linting fails:
 
-If unit tests fail, reproduce the failure using:
+```bash
+python -m ruff check .
+```
+
+If formatting verification fails:
+
+```bash
+python -m ruff format --check .
+```
+
+If unit tests fail:
 
 ```bash
 python -m pytest -q -m "not integration"
 ```
 
-Do not add a private `.env` file to the repository.
+Review reported errors before making changes.

@@ -23,14 +23,9 @@ if spec is None or spec.loader is None:
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-RAW_RELATIVE_PATH = (
-    "twelve_data/AAPL/2026/10/24/"
-    "20261024T160953206116Z.json"
-)
+RAW_RELATIVE_PATH = "twelve_data/AAPL/2026/10/24/20261024T160953206116Z.json"
 
-RAW_ABSOLUTE_PATH = (
-    "/opt/financial-data/raw/" + RAW_RELATIVE_PATH
-)
+RAW_ABSOLUTE_PATH = "/opt/financial-data/raw/" + RAW_RELATIVE_PATH
 
 MOCK_RESULT = {
     "status": "success",
@@ -44,9 +39,7 @@ MOCK_RESULT = {
 
 
 def execute_task(*, run_conf, ingestion_result):
-    context = {
-        "dag_run": SimpleNamespace(conf=run_conf)
-    }
+    context = {"dag_run": SimpleNamespace(conf=run_conf)}
 
     with (
         patch.object(
@@ -55,14 +48,11 @@ def execute_task(*, run_conf, ingestion_result):
             return_value=context,
         ),
         patch(
-            "financial_data_platform.orchestration.silver."
-            "process_raw_file_to_silver",
+            "financial_data_platform.orchestration.silver.process_raw_file_to_silver",
             return_value=MOCK_RESULT,
         ) as mocked_processor,
     ):
-        result = module.process_raw_to_silver.function(
-            ingestion_result
-        )
+        result = module.process_raw_to_silver.function(ingestion_result)
 
     return result, mocked_processor
 
@@ -97,10 +87,7 @@ result, processor = execute_task(
 
 assert result == MOCK_RESULT
 processor.assert_called_once()
-assert (
-    processor.call_args.kwargs["raw_relative_path"]
-    == RAW_RELATIVE_PATH
-)
+assert processor.call_args.kwargs["raw_relative_path"] == RAW_RELATIVE_PATH
 print("PASS: Explicit Raw file is processed offline")
 
 
@@ -112,10 +99,7 @@ result, processor = execute_task(
 
 assert result == MOCK_RESULT
 processor.assert_called_once()
-assert (
-    processor.call_args.kwargs["raw_relative_path"]
-    == RAW_RELATIVE_PATH
-)
+assert processor.call_args.kwargs["raw_relative_path"] == RAW_RELATIVE_PATH
 print("PASS: Newly ingested Raw file is selected")
 
 

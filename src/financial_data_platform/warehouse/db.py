@@ -10,9 +10,7 @@ def get_database_config() -> dict[str, str | int]:
     password = os.getenv("POSTGRES_PASSWORD")
 
     if not password:
-        raise ValueError(
-            "POSTGRES_PASSWORD must be configured"
-        )
+        raise ValueError("POSTGRES_PASSWORD must be configured")
 
     return {
         "host": os.getenv("POSTGRES_HOST", "127.0.0.1"),

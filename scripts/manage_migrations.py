@@ -20,9 +20,7 @@ def discover_migrations() -> list[tuple[str, Path, str]]:
         version = path.name.split("_", maxsplit=1)[0]
 
         if version in seen_versions:
-            raise ValueError(
-                f"Duplicate migration version: {version}"
-            )
+            raise ValueError(f"Duplicate migration version: {version}")
 
         seen_versions.add(version)
 
@@ -30,6 +28,7 @@ def discover_migrations() -> list[tuple[str, Path, str]]:
         migrations.append((version, path, checksum))
 
     return migrations
+
 
 def migration_status(
     migrations: list[tuple[str, Path, str]],
@@ -45,9 +44,7 @@ def migration_status(
             continue
 
         if applied[version] != checksum:
-            raise ValueError(
-                f"Checksum mismatch for migration {version} ({path.name})"
-            )
+            raise ValueError(f"Checksum mismatch for migration {version} ({path.name})")
 
         statuses.append((version, "applied"))
 
@@ -66,9 +63,7 @@ def run_psql(database: str, sql: str) -> subprocess.CompletedProcess[str]:
             "postgres",
             "sh",
             "-c",
-            'psql -X -v ON_ERROR_STOP=1 '
-            '-U "$POSTGRES_USER" '
-            '-d "$1" -At',
+            'psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$1" -At',
             "sh",
             database,
         ],
@@ -78,6 +73,7 @@ def run_psql(database: str, sql: str) -> subprocess.CompletedProcess[str]:
         check=False,
         timeout=30,
     )
+
 
 def read_applied_migrations(database: str) -> dict[str, str]:
     """Read applied migration versions and checksums from PostgreSQL."""
@@ -92,9 +88,7 @@ def read_applied_migrations(database: str) -> dict[str, str]:
     )
 
     if result.returncode != 0:
-        raise RuntimeError(
-            f"Failed to read migration history: {result.stderr.strip()}"
-        )
+        raise RuntimeError(f"Failed to read migration history: {result.stderr.strip()}")
 
     applied = {}
 
@@ -115,9 +109,7 @@ def apply_migrations(
     # Validate all recorded checksums before executing anything.
     statuses = migration_status(migrations, applied)
 
-    for (version, path, checksum), (_, status) in zip(
-        migrations, statuses
-    ):
+    for (version, path, checksum), (_, status) in zip(migrations, statuses):
         if status == "applied":
             continue
 
@@ -137,8 +129,7 @@ def build_migration_sql(
         raise ValueError("Migration version must contain only digits")
 
     if len(checksum) != 64 or any(
-        character not in "0123456789abcdef"
-        for character in checksum
+        character not in "0123456789abcdef" for character in checksum
     ):
         raise ValueError("Invalid migration checksum")
 
@@ -155,9 +146,7 @@ def build_migration_sql(
         statement = line.strip().rstrip(";").upper()
 
         if statement in transaction_statements:
-            raise ValueError(
-                f"Transaction control is not allowed in {path.name}"
-            )
+            raise ValueError(f"Transaction control is not allowed in {path.name}")
 
     return (
         "BEGIN;\n"
@@ -206,9 +195,7 @@ def execute_postgres_migration(
     )
 
     if result.returncode != 0:
-        raise RuntimeError(
-            f"Migration {version} failed: {result.stderr.strip()}"
-        )
+        raise RuntimeError(f"Migration {version} failed: {result.stderr.strip()}")
 
 
 def load_migration_history_sql() -> str:
@@ -231,8 +218,7 @@ def initialize_migration_history(database: str) -> None:
 
     if result.returncode != 0:
         raise RuntimeError(
-            "Failed to initialize migration history: "
-            f"{result.stderr.strip()}"
+            f"Failed to initialize migration history: {result.stderr.strip()}"
         )
 
 
@@ -311,9 +297,7 @@ if __name__ == "__main__":
     import argparse
     from functools import partial
 
-    parser = argparse.ArgumentParser(
-        description="Manage PostgreSQL schema migrations."
-    )
+    parser = argparse.ArgumentParser(description="Manage PostgreSQL schema migrations.")
     parser.add_argument(
         "command",
         choices=["status", "apply"],

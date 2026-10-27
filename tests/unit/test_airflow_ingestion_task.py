@@ -15,8 +15,7 @@ def get_ingestion_task() -> ast.FunctionDef:
     return next(
         node
         for node in tree.body
-        if isinstance(node, ast.FunctionDef)
-        and node.name == "ingest_raw_market_data"
+        if isinstance(node, ast.FunctionDef) and node.name == "ingest_raw_market_data"
     )
 
 
@@ -69,7 +68,10 @@ def test_scheduler_mounts_source_and_raw_storage():
     assert "./src:/opt/financial-data/src:ro" in compose
     assert "./data/raw:/opt/financial-data/raw" in compose
     assert "PYTHONPATH: /opt/financial-data/src" in compose
-    assert "ENABLE_TWELVE_DATA_INGESTION: ${ENABLE_TWELVE_DATA_INGESTION:-false}" in compose
+    assert (
+        "ENABLE_TWELVE_DATA_INGESTION: ${ENABLE_TWELVE_DATA_INGESTION:-false}"
+        in compose
+    )
 
 
 def test_ingestion_requires_per_run_authorization():

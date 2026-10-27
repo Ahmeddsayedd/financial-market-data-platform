@@ -37,10 +37,10 @@ def test_ingest_daily_market_data_fetches_and_preserves_raw_response():
     raw_writer.write.return_value = Mock()
 
     raw_path = ingest_daily_market_data(
-    symbol="AAPL",
-    client=client,
-    raw_writer=raw_writer,
-    extracted_at=extracted_at,
+        symbol="AAPL",
+        client=client,
+        raw_writer=raw_writer,
+        extracted_at=extracted_at,
     )
 
     client.fetch_daily_time_series.assert_called_once_with("AAPL")

@@ -59,10 +59,7 @@ def finalize_airflow_execution(
         status=status,
     )
 
-    print(
-        f"Pipeline execution tracking finalized: "
-        f"dag_id={dag_id}, status={status}"
-    )
+    print(f"Pipeline execution tracking finalized: dag_id={dag_id}, status={status}")
 
 
 def on_airflow_success(context: dict) -> None:

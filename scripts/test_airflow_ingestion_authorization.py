@@ -41,9 +41,7 @@ def verify_case(
     environment_value = "true" if environment_enabled else "false"
 
     context = {
-        "dag_run": SimpleNamespace(
-            conf={"allow_live_ingestion": run_authorized}
-        )
+        "dag_run": SimpleNamespace(conf={"allow_live_ingestion": run_authorized})
     }
 
     mocked_result = {
@@ -65,18 +63,14 @@ def verify_case(
             return_value=context,
         ),
         patch(
-            "financial_data_platform.orchestration.ingestion."
-            "ingest_market_symbols",
+            "financial_data_platform.orchestration.ingestion.ingest_market_symbols",
             return_value=mocked_result,
         ) as mocked_ingestion,
     ):
-        result = dag_module.ingest_raw_market_data.function(
-            configuration
-        )
+        result = dag_module.ingest_raw_market_data.function(configuration)
 
     assert mocked_ingestion.call_count == expected_calls, (
-        f"Expected {expected_calls} ingestion calls, "
-        f"got {mocked_ingestion.call_count}"
+        f"Expected {expected_calls} ingestion calls, got {mocked_ingestion.call_count}"
     )
 
     if expected_calls == 0:

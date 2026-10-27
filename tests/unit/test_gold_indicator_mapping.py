@@ -20,9 +20,7 @@ def test_to_gold_indicator_values():
         close=Decimal("102.00"),
         volume=1000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     indicators = MarketIndicators(
@@ -40,4 +38,4 @@ def test_to_gold_indicator_values():
         "daily_return_pct": Decimal("2.00"),
         "sma_7": Decimal("101.50"),
         "sma_30": None,
-    }   
+    }

@@ -10,7 +10,7 @@ from financial_data_platform.warehouse.gold_loader import (
     ensure_date,
     insert_market_fact,
     load_market_batch,
-    load_market_records, 
+    load_market_records,
     load_silver_file,
 )
 from financial_data_platform.models.market_data import MarketDataRecord
@@ -132,9 +132,7 @@ def test_load_market_batch_inserts_one_observation():
         close=Decimal("253.00000000"),
         volume=1000000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     cursor = MagicMock()
@@ -186,9 +184,7 @@ def test_load_market_batch_counts_mixed_outcomes():
         close=Decimal("253.00000000"),
         volume=1000000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     records = [
@@ -224,7 +220,6 @@ def test_load_market_batch_counts_mixed_outcomes():
     }
 
 
-
 def test_load_market_batch_propagates_database_error():
     """Stop batch processing when a PostgreSQL operation fails."""
 
@@ -237,9 +232,7 @@ def test_load_market_batch_propagates_database_error():
         close=Decimal("253.00000000"),
         volume=1000000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     cursor = MagicMock()

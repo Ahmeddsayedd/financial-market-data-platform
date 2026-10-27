@@ -48,9 +48,7 @@ def process_raw_market_data(
 
     validation_result = partition_market_data_records(records)
 
-    silver_paths = silver_writer.write(
-        validation_result.valid_records
-    )
+    silver_paths = silver_writer.write(validation_result.valid_records)
 
     quarantine_paths = [
         quarantine_writer.write(

@@ -55,7 +55,6 @@ def test_to_date_dimension_handles_new_year():
     }
 
 
-
 def test_to_asset_identity_preserves_source_and_symbol():
     """Asset identity must include the source and ticker symbol."""
 
@@ -68,9 +67,7 @@ def test_to_asset_identity_preserves_source_and_symbol():
         close=Decimal("253.00000000"),
         volume=1000000,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     result = to_asset_identity(record)
@@ -90,9 +87,7 @@ def test_to_market_fact_preserves_prices_and_identity():
         close=Decimal("253.87654321"),
         volume=1234567,
         source="twelve_data",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     result = to_market_fact(record, asset_key=42)
@@ -105,9 +100,7 @@ def test_to_market_fact_preserves_prices_and_identity():
         "low": Decimal("248.50000000"),
         "close": Decimal("253.87654321"),
         "volume": 1234567,
-        "extracted_at": datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        "extracted_at": datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     }
 
     assert isinstance(result["close"], Decimal)

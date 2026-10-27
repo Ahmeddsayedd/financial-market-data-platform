@@ -24,6 +24,7 @@ from financial_data_platform.warehouse.gold_loader import (
     load_silver_file,
 )
 
+
 def run_test_sql(sql: str) -> subprocess.CompletedProcess[str]:
     """Execute SQL against the isolated PostgreSQL test database."""
     return subprocess.run(
@@ -35,9 +36,9 @@ def run_test_sql(sql: str) -> subprocess.CompletedProcess[str]:
             "postgres",
             "sh",
             "-c",
-            'psql -X -v ON_ERROR_STOP=1 '
+            "psql -X -v ON_ERROR_STOP=1 "
             '-U "$POSTGRES_USER" '
-            '-d financial_market_test -At',
+            "-d financial_market_test -At",
         ],
         input=sql,
         capture_output=True,
@@ -118,10 +119,7 @@ def test_gold_rejects_negative_trading_volume():
     result = run_test_sql(sql)
 
     assert result.returncode != 0
-    assert (
-        "ck_fact_market_metrics_nonnegative_volume"
-        in result.stderr
-    )
+    assert "ck_fact_market_metrics_nonnegative_volume" in result.stderr
 
 
 @pytest.mark.integration
@@ -268,6 +266,7 @@ def test_gold_rejects_close_above_daily_high():
     assert result.returncode != 0
     assert "ck_fact_market_metrics_price_range" in result.stderr
 
+
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "open_price, high_price, low_price, close_price, expected_constraint",
@@ -321,6 +320,7 @@ def test_gold_rejects_invalid_ohlc_values(
     assert result.returncode != 0
     assert expected_constraint in result.stderr
 
+
 @pytest.mark.integration
 def test_gold_rejects_inconsistent_date_key():
     """Reject a date key that disagrees with the calendar date."""
@@ -355,6 +355,7 @@ def test_gold_rejects_inconsistent_date_key():
     assert result.returncode != 0
     assert "ck_dim_date_key_consistency" in result.stderr
 
+
 @pytest.mark.integration
 def test_gold_rejects_inconsistent_calendar_attributes():
     """Reject calendar attributes that disagree with full_date."""
@@ -388,6 +389,7 @@ def test_gold_rejects_inconsistent_calendar_attributes():
 
     assert result.returncode != 0
     assert "ck_dim_date_calendar_consistency" in result.stderr
+
 
 @pytest.mark.integration
 def test_gold_rejects_invalid_pipeline_status():
@@ -483,6 +485,7 @@ def test_gold_rejects_pipeline_finish_before_start():
     assert result.returncode != 0
     assert "ck_pipeline_run_time_order" in result.stderr
 
+
 @pytest.mark.integration
 def test_gold_rejects_negative_pipeline_duration():
     """Reject a negative pipeline execution duration."""
@@ -552,10 +555,7 @@ def test_migration_runner_reads_applied_migrations():
     applied = read_applied_migrations("financial_market_test")
     migrations = discover_migrations()
 
-    expected_applied = {
-        version: checksum
-        for version, _, checksum in migrations
-    }
+    expected_applied = {version: checksum for version, _, checksum in migrations}
 
     assert applied == expected_applied
 
@@ -915,7 +915,6 @@ def test_ensure_asset_is_idempotent():
                 connection.rollback()
 
 
-
 @pytest.mark.integration
 def test_ensure_date_is_idempotent(monkeypatch):
     """Repeated date loading must not create duplicate calendar rows."""
@@ -999,7 +998,6 @@ def test_insert_market_fact_preserves_decimal_precision(monkeypatch):
             connection.rollback()
 
 
-
 @pytest.mark.integration
 def test_identical_market_fact_retry_is_unchanged(monkeypatch):
     """Loading an identical fact twice must not create a duplicate."""
@@ -1048,7 +1046,6 @@ def test_identical_market_fact_retry_is_unchanged(monkeypatch):
             connection.rollback()
 
 
-
 @pytest.mark.integration
 def test_newer_market_fact_updates_existing_prices(monkeypatch):
     """Newer corrected prices should update the existing Gold fact."""
@@ -1064,9 +1061,7 @@ def test_newer_market_fact_updates_existing_prices(monkeypatch):
         close=Decimal("253.00000000"),
         volume=1000000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     corrected = MarketDataRecord(
@@ -1078,9 +1073,7 @@ def test_newer_market_fact_updates_existing_prices(monkeypatch):
         close=Decimal("254.50000000"),
         volume=1000000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     )
 
     with connect_to_database() as connection:
@@ -1093,12 +1086,8 @@ def test_newer_market_fact_updates_existing_prices(monkeypatch):
                 )
                 ensure_date(cursor, original.observation_date)
 
-                first_action = insert_market_fact(
-                    cursor, original, asset_key
-                )
-                second_action = insert_market_fact(
-                    cursor, corrected, asset_key
-                )
+                first_action = insert_market_fact(cursor, original, asset_key)
+                second_action = insert_market_fact(cursor, corrected, asset_key)
 
                 cursor.execute(
                     """
@@ -1122,7 +1111,6 @@ def test_newer_market_fact_updates_existing_prices(monkeypatch):
             connection.rollback()
 
 
-
 @pytest.mark.integration
 def test_older_market_fact_does_not_overwrite_newer_data(monkeypatch):
     """An older extraction must not overwrite a newer Gold fact."""
@@ -1138,9 +1126,7 @@ def test_older_market_fact_does_not_overwrite_newer_data(monkeypatch):
         close=Decimal("254.50000000"),
         volume=1000000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     )
 
     older = MarketDataRecord(
@@ -1152,9 +1138,7 @@ def test_older_market_fact_does_not_overwrite_newer_data(monkeypatch):
         close=Decimal("253.00000000"),
         volume=1000000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     with connect_to_database() as connection:
@@ -1167,12 +1151,8 @@ def test_older_market_fact_does_not_overwrite_newer_data(monkeypatch):
                 )
                 ensure_date(cursor, newer.observation_date)
 
-                first_action = insert_market_fact(
-                    cursor, newer, asset_key
-                )
-                second_action = insert_market_fact(
-                    cursor, older, asset_key
-                )
+                first_action = insert_market_fact(cursor, newer, asset_key)
+                second_action = insert_market_fact(cursor, older, asset_key)
 
                 cursor.execute(
                     """
@@ -1210,9 +1190,7 @@ def test_equal_timestamp_conflict_rejects_changed_prices(monkeypatch):
         close=Decimal("253.00000000"),
         volume=1000000,
         source="integration_test",
-        extracted_at=datetime(
-            2026, 10, 9, 18, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 18, 0, tzinfo=timezone.utc),
     )
 
     conflicting = MarketDataRecord(
@@ -1237,12 +1215,8 @@ def test_equal_timestamp_conflict_rejects_changed_prices(monkeypatch):
                 )
                 ensure_date(cursor, original.observation_date)
 
-                first_action = insert_market_fact(
-                    cursor, original, asset_key
-                )
-                second_action = insert_market_fact(
-                    cursor, conflicting, asset_key
-                )
+                first_action = insert_market_fact(cursor, original, asset_key)
+                second_action = insert_market_fact(cursor, conflicting, asset_key)
 
                 cursor.execute(
                     """
@@ -1491,9 +1465,7 @@ def test_gold_batch_newer_correction_updates_committed_fact(monkeypatch):
     corrected = replace(
         second,
         close=Decimal("104.50000000"),
-        extracted_at=datetime(
-            2026, 10, 9, 19, 0, tzinfo=timezone.utc
-        ),
+        extracted_at=datetime(2026, 10, 9, 19, 0, tzinfo=timezone.utc),
     )
 
     try:
@@ -1586,7 +1558,6 @@ def test_gold_batch_newer_correction_updates_committed_fact(monkeypatch):
                     """,
                     ("integration_test", "CORRECT23"),
                 )
-
 
 
 @pytest.mark.integration
