@@ -120,6 +120,28 @@ jobs:
           python scripts/manage_migrations.py status \
             --database financial_market_test
 
+      - name: Create isolated migration-test database
+        run: |
+          docker compose exec -T postgres \
+            psql -X -v ON_ERROR_STOP=1 \
+            -U "$POSTGRES_USER" \
+            -d postgres \
+            -c "CREATE DATABASE financial_market_migration_test;"
+
+      - name: Initialize migration-test database history
+        run: |
+          python -c "from scripts.manage_migrations import initialize_migration_history, validate_migration_history; initialize_migration_history('financial_market_migration_test'); validate_migration_history('financial_market_migration_test')"
+
+      - name: Apply migration-test database migrations
+        run: |
+          python scripts/manage_migrations.py apply \
+            --database financial_market_migration_test
+
+      - name: Verify migration-test database status
+        run: |
+          python scripts/manage_migrations.py status \
+            --database financial_market_migration_test
+
       - name: Run PostgreSQL integration tests
         run: python -m pytest -q -m integration
 
