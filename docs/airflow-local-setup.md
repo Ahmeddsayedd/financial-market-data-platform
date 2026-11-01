@@ -2,6 +2,8 @@
 
 ## Overview
 
+For current operational procedures, permissions, incident response and backup guidance, start with the [operations index](operations/README.md). This document retains historical issue verification notes; use the current seven-task description and safety controls for operation.
+
 The Financial Market Data Platform uses Apache Airflow 3.1.7 for local workflow orchestration.
 
 Airflow runs through Docker Compose with LocalExecutor and a dedicated PostgreSQL metadata database. This database is separate from the financial Gold warehouse.
@@ -103,7 +105,7 @@ To inspect discovered DAGs:
 docker compose -f compose.airflow.yaml exec airflow-dag-processor airflow dags list
 ```
 
-No custom financial ETL DAGs are included in the initial infrastructure setup.
+The current repository provides the `financial_market_pipeline` DAG with seven tasks. See the current workflow summary below; older issue-specific historical verification notes remain in this document.
 
 ## Stop Airflow
 
@@ -168,7 +170,7 @@ The integration tests require the separate Gold PostgreSQL container and its tes
 
 ## Scope
 
-This setup establishes local Airflow infrastructure only. Financial ingestion, Silver processing, Gold loading, and indicator calculation will be connected to Airflow DAGs in subsequent issues.
+This setup documents the current local Airflow environment. The DAG integrates opt-in Raw ingestion, Raw-to-Silver processing, test-only Gold loading and execution tracking. The separate analytics layer persists financial indicators; no production deployment or unattended ingestion is enabled.
 
 ## First Financial Market DAG
 
@@ -178,17 +180,11 @@ Issue #31 introduces the first demonstration workflow:
 
 **DAG ID:** `financial_market_pipeline`
 
-The workflow demonstrates Airflow task orchestration without calling financial APIs or modifying Raw, Silver, or Gold datasets.
+The initial Issue #31 demonstration was offline. The current seven-task DAG includes guarded Raw ingestion, optional Silver processing, test-only Gold loading, and execution tracking. Importing the DAG never executes those tasks.
 
 ### Workflow
 
-The DAG contains three sequential TaskFlow tasks:
-
-1. `check_pipeline_configuration` — validates static, non-sensitive pipeline settings.
-2. `prepare_pipeline_run` — prepares deterministic demonstration run metadata.
-3. `summarize_pipeline_run` — validates the prepared metadata and returns a completion summary.
-
-The TaskFlow API connects these tasks by passing each task's output to the next task.
+The current DAG contains **seven** TaskFlow tasks: `start_execution_tracking`, `check_pipeline_configuration`, `prepare_pipeline_run`, `summarize_pipeline_run`, `ingest_raw_market_data`, `process_raw_to_silver`, and `load_silver_to_gold`. A demonstration branch produces a summary; a second branch conditionally handles Raw → Silver → Gold. Both branches depend on configuration validation. Ingestion and Gold loading additionally require independent environment and DAG-run authorizations. See the later stage-specific sections for details.
 
 ### Scheduling and Safety
 
@@ -199,7 +195,7 @@ The TaskFlow API connects these tasks by passing each task's output to the next 
 - Maximum one active DAG run
 - One retry per failed task
 
-The DAG does not use Twelve Data API credentials or connect to the financial Gold warehouse.
+DAG import is offline; execution tracking requires the isolated `financial_market_test` database. Live Twelve Data ingestion and Gold loading require explicit dual authorization and are disabled by default.
 
 ### Run the DAG Locally
 
@@ -213,7 +209,7 @@ The DAG does not use Twelve Data API credentials or connect to the financial Gol
 
 When the DAG is unpaused, Airflow may also create an eligible scheduled run.
 
-A successful execution shows all three task instances in the `success` state.
+Historical Issue #31 demonstrations had three tasks. The current seven-task DAG must be interpreted according to its current task graph and authorization settings.
 
 ### Automated Validation
 
@@ -249,15 +245,13 @@ The DAG was paused again after verification.
 
 ### Limitations
 
-This DAG is a demonstration of orchestration infrastructure, not a complete financial ETL implementation.
-
-Actual market-data extraction, Raw and Silver processing, Gold PostgreSQL loading, and financial indicator persistence will be integrated in subsequent issues.
+The DAG now includes controlled Raw/Silver/Gold stages and execution tracking; it is not configured for unattended production ingestion. Health-check and runbook guidance is available in `docs/operations/README.md`.
 
 ## Financial market ingestion
 
 The `financial_market_pipeline` DAG integrates the existing Twelve Data ingestion adapter with Apache Airflow. It currently supports controlled ingestion of **AAPL daily market data** into the project's Raw JSON storage layer.
 
-This milestone integrates Raw ingestion only. Silver transformations, Gold warehouse loading, and financial analytics are not yet connected to the Airflow DAG.
+The original ingestion issue integrated Raw only; subsequent issues added Silver, test-only Gold, and execution tracking. The current DAG is paused by default and opt-in for live activity.
 
 ### Safety controls
 
@@ -310,7 +304,7 @@ A controlled live ingestion run requires available Twelve Data API quota and del
 - Only AAPL is configured for the Airflow ingestion task.
 - Live ingestion is opt-in rather than automatically scheduled.
 - Repeated authorized runs can write additional timestamped Raw JSON files.
-- Silver and Gold pipeline stages will be integrated in later milestones.
+- Silver and Gold stages are present in the current DAG but require controlled input and authorization.
 
 ## Raw-to-Silver orchestration
 
@@ -373,11 +367,11 @@ MSYS_NO_PATHCONV=1 docker compose -f compose.airflow.yaml exec \
   airflow-scheduler python /tmp/test_airflow_silver_task.py
 ```
 
-This milestone stops at the Silver layer. Loading the transformed data into the Gold PostgreSQL warehouse will be implemented separately.
+This section records the historical Silver integration; the following section documents the now-implemented test-only Gold stage.
 
 ## Silver-to-Gold Airflow orchestration
 
-The `financial_market_pipeline` DAG includes `load_silver_to_gold` as its sixth task, downstream of `process_raw_to_silver`.
+The `financial_market_pipeline` DAG includes `load_silver_to_gold` downstream of `process_raw_to_silver`; the present DAG contains seven tasks including execution tracking.
 
 The task reuses the existing Gold warehouse loader to read validated Silver Parquet files and persist financial market observations into PostgreSQL.
 
