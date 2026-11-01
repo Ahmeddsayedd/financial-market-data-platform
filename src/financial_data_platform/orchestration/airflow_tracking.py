@@ -2,8 +2,11 @@
 
 from datetime import datetime, timezone
 
+from financial_data_platform.observability.events import log_event
+
 from financial_data_platform.orchestration.execution_tracking import (
     finish_pipeline_tracking,
+    tracking_run_id,
     start_pipeline_tracking,
 )
 
@@ -59,7 +62,15 @@ def finalize_airflow_execution(
         status=status,
     )
 
-    print(f"Pipeline execution tracking finalized: dag_id={dag_id}, status={status}")
+    log_event(
+        "airflow_tracking",
+        "pipeline_execution_finalized",
+        level="ERROR" if status == "failed" else "INFO",
+        dag_id=dag_id,
+        airflow_run_id=airflow_run_id,
+        pipeline_run_id=tracking_run_id(dag_id=dag_id, airflow_run_id=airflow_run_id),
+        status=status,
+    )
 
 
 def on_airflow_success(context: dict) -> None:
