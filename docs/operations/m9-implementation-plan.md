@@ -1,7 +1,7 @@
 # M9 — CI/CD and observability implementation plan
 
 **Parent audit:** Issue #65; see [`m9-infrastructure-audit.md`](m9-infrastructure-audit.md).
-**Planning status:** infrastructure audit #65 merged; offline smoke verification is Issue #67. Compose health and validation is Issue #69; structured pipeline logging is Issue #71; other issue numbers are intentionally unassigned.
+**Planning status:** infrastructure audit #65 merged; offline smoke verification is Issue #67. Compose health and validation is Issue #69; structured pipeline logging is Issue #71; pipeline health is Issue #73; other issue numbers are intentionally unassigned.
 **Goal:** reliable, observable, testable operation without accidentally enabling live ingestion or deploying to production.
 
 ## Guardrails and boundary
@@ -15,7 +15,7 @@ The current CI already runs Ruff, unit tests and isolated PostgreSQL integration
 | 1 | `ci: add offline Airflow DAG and dashboard smoke verification` (**#67**) | P1 | #65 | CI jobs or steps that run deterministic DAG import/structure and dashboard startup/build checks without API/network side effects. |
 | 2 | `ops: add Airflow service health checks and Compose validation` (**#69**) | P1 | #65 | Version-compatible readiness/health probes, Compose configuration validation, local startup checks. |
 | 3 | `observability: standardize pipeline logs and safe diagnostics` (**#71**) | P1 | #65 | Structured event fields, DAG/run correlation, masking tests, logger conventions. |
-| 4 | `observability: implement read-only pipeline health assessment` | P1 | #65, ideally 3 | Assessed failed/stale-running runs with documented thresholds and no DB mutation; optional monitoring presentation or CLI. |
+| 4 | `observability: implement read-only pipeline health assessment` (**#73**) | P1 | #65, ideally 3 | Assessed failed/stale-running runs with documented thresholds and no DB mutation; optional monitoring presentation or CLI. |
 | 5 | `ops: document secrets, least privilege and operational runbooks` | P1 | #65, 2–4 | Safe configuration, read-only dashboard grants, startup/shutdown, backup/recovery guidance and incident checklist. |
 | 6 | `ci: verify reproducible release artifacts and deployment readiness` | P1 | 1, 2, 5 | Deterministic container build/smoke, immutable tagging strategy, release checks and manual rollback plan. No automatic production deployment. |
 | 7 | `test(ops): run M9 end-to-end reliability and CI review` | P1 | 1–6 | Offline failure drills, health/observability assertions, complete tests, documentation and final M9 sign-off. |
@@ -83,7 +83,7 @@ flowchart TD
     CI["#67 Offline CI smoke checks"]
     Compose["#69 Compose health checks"]
     Logging["#71 Structured logging"]
-    Health["4. Read-only operational health"]
+    Health["#73 Read-only operational health"]
     Runbook["5. Secrets and runbooks"]
     Release["6. Release verification"]
     Review["7. Final M9 review"]
