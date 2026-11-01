@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from financial_data_platform.analytics.pipeline_health import assess_pipeline_health
+
 import psycopg
 
 from financial_data_platform.analytics.pipeline_monitoring import (
@@ -265,6 +267,34 @@ def render_pipeline_monitoring(st) -> None:
     except (psycopg.Error, OSError, ValueError):
         st.error(DATABASE_UNAVAILABLE_MESSAGE)
         return
+
+    # Health is always calculated from unfiltered run history. Otherwise a
+    # "success" filter could conceal recent failed or stale-running executions.
+    filtered = any(
+        value is not None for value in (source, status, start_date, end_date)
+    )
+    health_runs = runs
+    if filtered:
+        try:
+            health_runs = list_pipeline_runs(limit=500)
+        except (psycopg.Error, OSError, ValueError):
+            st.caption("Operational health: unavailable (history query failed).")
+            health_runs = None
+
+    if health_runs is not None:
+        health = assess_pipeline_health(health_runs)
+        st.subheader("Operational health (all sources and statuses)")
+        st.caption(
+            f"Status: {health.status.upper()} | "
+            f"Assessed: {health.assessed_at.isoformat()} | "
+            f"Runs examined: {health.examined_runs}"
+        )
+        for reason in health.reasons:
+            st.caption(reason)
+        st.caption(
+            "Observed run history only; this does not verify Airflow service "
+            "readiness or future scheduled runs."
+        )
 
     if not runs:
         st.info("No pipeline runs match the selected filters.")

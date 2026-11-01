@@ -61,13 +61,15 @@ def test_monitoring_filters_are_passed_to_database():
         patch.object(app, "list_pipeline_runs", return_value=[]) as query,
     ):
         app.render_pipeline_monitoring(st)
-    query.assert_called_once_with(
-        source="twelve_data",
-        status="failed",
-        start_date=date(2026, 10, 1),
-        end_date=date(2026, 10, 9),
-        limit=500,
-    )
+    assert query.call_count == 2
+    assert query.call_args_list[0].kwargs == {
+        "source": "twelve_data",
+        "status": "failed",
+        "start_date": date(2026, 10, 1),
+        "end_date": date(2026, 10, 9),
+        "limit": 500,
+    }
+    assert query.call_args_list[1].kwargs == {"limit": 500}
 
 
 def test_invalid_date_range_prevents_query():
