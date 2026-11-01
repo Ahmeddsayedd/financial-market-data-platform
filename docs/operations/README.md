@@ -16,6 +16,7 @@ admin password files or raw log content containing secrets.
 | Correlated JSON diagnostics | [Structured logging](structured-pipeline-logging.md) |
 | Read-only pipeline health states | [Pipeline health assessment](pipeline-health-assessment.md) |
 | M9 scope and outstanding issues | [Implementation plan](m9-implementation-plan.md) |
+| Release artifact verification and manual promotion | [Release readiness](release-readiness.md) |
 
 ## Boundaries
 

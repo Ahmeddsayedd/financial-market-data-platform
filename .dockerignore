@@ -1,0 +1,20 @@
+# Default deny: only the dashboard's audited build inputs are available.
+*
+!pyproject.toml
+!README.md
+!src/
+!src/**
+!scripts/
+!scripts/verify_dashboard_image.py
+
+# Defense in depth against accidental additions within allowed directories.
+**/.env
+**/.env.*
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.log
+**/*.pem
+**/*.key
+**/data/
+**/airflow/logs/
