@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | 1 | `experiment: design reproducible evaluation framework and metrics` (#81) | M9 | This methodology, pure metric definitions, and contract tests; no benchmark claims |
 | 2 | `experiment: generate deterministic synthetic market-data workloads` (**#83**) | #81 | Seeded, labeled, replayable provider-shaped input; size tiers and malformed-vs-financial-invalid cases, fixture hashes; no provider traffic |
-| 3 | `experiment: implement isolated ETL benchmark runner` | 1–2 | Bounded, opt-in local Raw→Silver benchmark, monotonic stage timings, JSONL attempt schema, warm-ups, failed-attempt capture; temp dirs |
+| 3 | `experiment: implement isolated ETL benchmark runner` (**#85**) | 1–2 | Bounded, opt-in local Raw→Silver benchmark, monotonic stage timings, JSONL attempt schema, warm-ups, failed-attempt capture; temp dirs |
 | 4 | `experiment: evaluate financial data quality and rejection behavior` | 2–3 | Measured record-level rates, code occurrence breakdown, parser failure segregation, expected-vs-observed validity with denominators |
 | 5 | `experiment: evaluate Gold persistence and repeatability` | 2–3 | Operator-approved isolated `financial_market_test` scenarios, inserted/updated/unchanged/rejected counts, logical-state comparison and cleanup review |
 | 6 | `experiment: analyze performance, variability and results` | 3–5 | Repeated-run distributions, throughput/time curves, limitations, sanitized result tables/figures; no fabricated benchmark data |
@@ -32,3 +32,7 @@ The final M10 results should provide research questions, justified dataset desig
 ## Issue #83 implementation
 
 The deterministic, offline generator and manifest contracts are documented in [synthetic workloads](synthetic-workloads.md). The 100/1,000/10,000 observation tiers are fixture definitions, not benchmark evidence. Actual observed CI and local test results must be recorded by the PR reviewer.
+
+## Issue #85 implementation
+
+The [isolated Raw-to-Silver benchmark runner](etl-benchmark-runner.md) consumes verified Issue #83 fixtures and emits bounded per-attempt JSONL evidence with explicit warm-up, monotonic timing, failure and isolation semantics. This is an experimental *instrument*, not a published benchmark result; later M10 issues analyze actual observations.
