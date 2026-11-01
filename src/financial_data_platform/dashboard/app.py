@@ -8,6 +8,12 @@ from financial_data_platform.analytics.queries import (
     get_market_history,
     list_assets,
 )
+from financial_data_platform.dashboard.indicator_charts import (
+    has_persisted_indicators,
+    make_price_sma_chart,
+    make_price_change_chart,
+    make_daily_return_chart,
+)
 from financial_data_platform.dashboard.market_charts import (
     make_candlestick_chart,
     make_volume_chart,
@@ -132,6 +138,85 @@ def render_market_charts(st) -> None:
     st.plotly_chart(make_volume_chart(observations, symbol), use_container_width=True)
 
 
+def render_indicator_charts(st) -> None:
+    """Visualize persisted Gold indicators without calculating or writing values."""
+    st.header("Financial indicators")
+    st.write("Historical closing prices and indicators persisted in Gold.")
+
+    try:
+        assets = list_assets()
+    except (psycopg.Error, OSError, ValueError):
+        st.error(DATABASE_UNAVAILABLE_MESSAGE)
+        return
+
+    if not assets:
+        st.info("No assets are available yet. Load validated records into Gold first.")
+        return
+
+    sources = sorted({asset.source for asset in assets})
+    source = st.selectbox("Indicator data source", sources)
+    symbols = sorted({asset.symbol for asset in assets if asset.source == source})
+    symbol = st.selectbox("Indicator financial instrument", symbols)
+    if not source or not symbol:
+        st.info("Select a source and instrument to view financial indicators.")
+        return
+
+    start_date: date | None = None
+    end_date: date | None = None
+    if st.checkbox("Filter indicator dates", value=False):
+        start_date = st.date_input("Indicator start date", value=date(2000, 1, 1))
+        end_date = st.date_input("Indicator end date", value=date.today())
+        if (
+            type(start_date) is not date
+            or type(end_date) is not date
+            or start_date > end_date
+        ):
+            st.warning("Start date must be on or before end date.")
+            return
+
+    try:
+        # One read-only query returns closing prices and already-persisted indicators
+        # from the same Gold rows, keeping the overlays aligned by observation date.
+        observations = get_market_history(
+            source, symbol, start_date=start_date, end_date=end_date, limit=5000
+        )
+    except (psycopg.Error, OSError, ValueError):
+        st.error(DATABASE_UNAVAILABLE_MESSAGE)
+        return
+
+    if not observations:
+        st.info("No observations match this asset and date range.")
+        return
+
+    if len(observations) == 5000:
+        st.warning(
+            "The query reached its 5,000-observation limit. "
+            "Only the earliest matching dates are shown; narrow the date range "
+            "before interpreting these charts as complete history."
+        )
+
+    st.caption(
+        f"Showing {observations[0].observation_date} through "
+        f"{observations[-1].observation_date}. "
+        "Missing indicators are left blank; no values are recalculated."
+    )
+    if not has_persisted_indicators(observations):
+        st.info(
+            "No calculated indicators are available for this selection yet. "
+            "The closing-price history is still shown."
+        )
+
+    st.plotly_chart(
+        make_price_sma_chart(observations, symbol), use_container_width=True
+    )
+    st.plotly_chart(
+        make_price_change_chart(observations, symbol), use_container_width=True
+    )
+    st.plotly_chart(
+        make_daily_return_chart(observations, symbol), use_container_width=True
+    )
+
+
 def main() -> None:
     """Configure and render the initial Streamlit dashboard page."""
     # Import the UI only when launched: existing CI installs [dev], not [dashboard].
@@ -146,11 +231,13 @@ def main() -> None:
     st.caption("Read-only analytics from the PostgreSQL Gold warehouse")
 
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Page", ("Overview", "Market charts"))
+    page = st.sidebar.radio("Page", ("Overview", "Market charts", "Indicators"))
     if page == "Overview":
         render_overview(st)
     elif page == "Market charts":
         render_market_charts(st)
+    elif page == "Indicators":
+        render_indicator_charts(st)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 The dashboard is a read-only view of the existing PostgreSQL Gold warehouse.
 It retrieves available assets using the analytics query layer introduced in
 Issue #53. Issue #57 adds interactive historical OHLCV and volume charts;
-financial indicator overlays and pipeline monitoring remain future M8 work.
+Issue #59 adds financial-indicator visualizations; pipeline monitoring remains future M8 work.
 
 ## Install
 
@@ -22,7 +22,9 @@ quality gates do not need to install Streamlit.
 Start the existing PostgreSQL instance with your normal local procedure.
 The dashboard uses the same `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`,
 `POSTGRES_USER`, and `POSTGRES_PASSWORD` environment variables as the
-existing warehouse connector. It does **not** automatically read `.env`.
+existing warehouse connector. When launched as a Streamlit application, it
+automatically loads the repository-root `.env` using `python-dotenv`; already
+set environment variables take precedence (`override=False`).
 
 For local work, use a dedicated database account with `SELECT` privileges
 on the required Gold tables wherever possible. The query layer explicitly
@@ -34,8 +36,8 @@ for local tests.
 
 ## Launch
 
-Set the PostgreSQL environment variables in the shell using your existing
-secure local setup, then run from the repository root:
+With PostgreSQL running and your private repository-root `.env` configured,
+run from the repository root:
 
 ```bash
 python -m streamlit run src/financial_data_platform/dashboard/app.py
@@ -102,3 +104,31 @@ python -m pytest -q tests/unit/test_dashboard_market_charts.py tests/unit/test_m
 To see populated charts, connect the application to a Gold warehouse containing
 previously validated historical observations. Do **not** load test fixtures into
 a primary/production warehouse just to demonstrate the UI.
+
+
+## Financial indicators (Issue #59)
+
+The **Indicators** navigation page plots the four currently persisted metrics:
+`price_change`, `daily_return_pct`, `sma_7`, and `sma_30`. The close/SMA
+figure overlays SMA 7 and SMA 30 on stored closing prices; separate figures
+show daily price changes and percentage returns.
+
+Select source and symbol independently, then optionally filter the inclusive
+observation-date range. Data comes from the same `get_market_history()`
+read-only Gold query used by Market charts; a single query aligns dates and
+values. No indicators are recalculated. Database `NULL` indicator values
+remain missing (Plotly gaps), and zero values remain genuine zeros.
+
+The page warns when the earliest 5,000 observations are returned, because
+there may be more matching records. Narrow the date range for complete views.
+For insufficient history with no calculated indicators, it shows an
+informational message while retaining the closing-price chart.
+
+Run indicator-chart tests without installing Streamlit or Plotly:
+
+```bash
+python -m pytest -q tests/unit/test_dashboard_indicators.py tests/unit/test_indicator_chart_figures.py
+```
+
+Only use isolated test data when visually verifying populated charts; never
+seed the primary warehouse for UI demonstrations.
