@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 
+from financial_data_platform.observability.events import log_event
 from financial_data_platform.config import get_twelve_data_api_key
 from financial_data_platform.ingestion import ingest_daily_market_data
 from financial_data_platform.providers.twelve_data.client import TwelveDataClient
@@ -64,6 +65,14 @@ def ingest_market_symbols(
         )
         stored_paths.append(str(raw_path))
 
+    log_event(
+        "ingestion",
+        "raw_ingestion_completed",
+        stage="ingestion",
+        status="success",
+        provider="twelve_data",
+        files_written=len(stored_paths),
+    )
     return {
         "provider": "twelve_data",
         "status": "success",

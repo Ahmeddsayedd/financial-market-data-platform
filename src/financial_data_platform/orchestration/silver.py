@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
+from financial_data_platform.observability.events import log_event
 from financial_data_platform.processing.raw_market_data import (
     process_raw_market_data,
 )
@@ -63,6 +64,15 @@ def process_raw_file_to_silver(
         detected_at=processing_time,
     )
 
+    log_event(
+        "silver",
+        "silver_processing_completed",
+        stage="silver",
+        status="success",
+        total_records=result.total_records,
+        valid_count=result.valid_count,
+        invalid_count=result.invalid_count,
+    )
     return {
         "status": "success",
         "raw_path": str(raw_path),

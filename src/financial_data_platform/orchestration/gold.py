@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Sequence
 
+from financial_data_platform.observability.events import log_event
 from financial_data_platform.storage.silver_reader import (
     read_silver_parquet,
 )
@@ -64,6 +65,18 @@ def load_silver_paths_to_gold(
     # The existing loader manages commit, rollback, and cleanup.
     counts = load_market_records(records)
 
+    log_event(
+        "gold",
+        "gold_loading_completed",
+        stage="gold",
+        status="success",
+        files_loaded=len(resolved_paths),
+        records_read=len(records),
+        inserted=counts["inserted"],
+        updated=counts["updated"],
+        unchanged=counts["unchanged"],
+        rejected=counts["rejected"],
+    )
     return {
         "status": "success",
         "files_loaded": len(resolved_paths),

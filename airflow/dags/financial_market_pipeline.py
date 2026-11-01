@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, timezone
 
 from airflow.sdk import DAG, get_current_context, task  # pyright: ignore[reportMissingImports]
 
+from financial_data_platform.observability.events import log_event
+
 from financial_data_platform.orchestration.airflow_tracking import (
     on_airflow_failure,
     on_airflow_success,
@@ -50,7 +52,15 @@ def start_execution_tracking() -> str:
         started_at=datetime.now(timezone.utc),
     )
 
-    print(f"Execution tracking initialized: {run_id}")
+    log_event(
+        "airflow_task",
+        "execution_tracking_started",
+        dag_id=dag_run.dag_id,
+        airflow_run_id=dag_run.run_id,
+        pipeline_run_id=run_id,
+        stage="tracking",
+        status="running",
+    )
     return str(run_id)
 
 
@@ -69,7 +79,12 @@ def check_pipeline_configuration() -> dict[str, str]:
         "status": "configuration_valid",
     }
 
-    print(f"Configuration validated for {pipeline_name}")
+    log_event(
+        "airflow_task",
+        "configuration_validated",
+        stage="configuration",
+        status="success",
+    )
     return configuration
 
 
@@ -88,7 +103,9 @@ def prepare_pipeline_run(
         "data_source": "none",
     }
 
-    print("Demonstration pipeline run prepared")
+    log_event(
+        "airflow_task", "pipeline_prepared", stage="preparation", status="success"
+    )
     return run_metadata
 
 
@@ -107,7 +124,7 @@ def summarize_pipeline_run(
         "message": "Airflow demonstration completed successfully",
     }
 
-    print(summary["message"])
+    log_event("airflow_task", "pipeline_summarized", stage="summary", status="success")
     return summary
 
 
@@ -135,7 +152,14 @@ def ingest_raw_market_data(
     run_authorized = run_configuration.get("allow_live_ingestion") is True
 
     if not (environment_enabled and run_authorized):
-        print("Live Twelve Data ingestion disabled; no request sent.")
+        log_event(
+            "airflow_task",
+            "ingestion_disabled",
+            stage="ingestion",
+            status="disabled",
+            dag_id=dag_run.dag_id,
+            airflow_run_id=dag_run.run_id,
+        )
         return {
             "status": "disabled",
             "provider": "twelve_data",
@@ -187,7 +211,14 @@ def process_raw_to_silver(
 
         selected_path = str(Path(raw_paths[0]).relative_to(raw_base_dir))
     else:
-        print("Raw-to-Silver processing disabled: no Raw file was selected.")
+        log_event(
+            "airflow_task",
+            "silver_processing_disabled",
+            stage="silver",
+            status="disabled",
+            dag_id=context["dag_run"].dag_id,
+            airflow_run_id=context["dag_run"].run_id,
+        )
         return {
             "status": "disabled",
             "total_records": 0,
@@ -233,7 +264,14 @@ def load_silver_to_gold(
     run_authorized = run_configuration.get("allow_gold_loading") is True
 
     if not (environment_enabled and run_authorized):
-        print("Gold loading disabled; no database write attempted.")
+        log_event(
+            "airflow_task",
+            "gold_loading_disabled",
+            stage="gold",
+            status="disabled",
+            dag_id=context["dag_run"].dag_id,
+            airflow_run_id=context["dag_run"].run_id,
+        )
         return {
             "status": "disabled",
             "files_loaded": 0,
@@ -270,7 +308,14 @@ def load_silver_to_gold(
         ]
 
     else:
-        print("Gold loading disabled: no Silver file selected.")
+        log_event(
+            "airflow_task",
+            "gold_loading_no_input",
+            stage="gold",
+            status="disabled",
+            dag_id=context["dag_run"].dag_id,
+            airflow_run_id=context["dag_run"].run_id,
+        )
         return {
             "status": "disabled",
             "files_loaded": 0,
