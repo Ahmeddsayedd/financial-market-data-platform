@@ -1,7 +1,7 @@
 # M9 — CI/CD and observability implementation plan
 
 **Parent audit:** Issue #65; see [`m9-infrastructure-audit.md`](m9-infrastructure-audit.md).
-**Planning status:** infrastructure audit #65 merged; offline smoke verification is Issue #67. Compose health and validation is Issue #69; structured pipeline logging is Issue #71; pipeline health is Issue #73; secrets and operational runbooks are Issue #75; release readiness is Issue #77; the final review issue number remains unassigned.
+**Planning status:** infrastructure audit #65 merged; offline smoke verification is Issue #67. Compose health and validation is Issue #69; structured pipeline logging is Issue #71; pipeline health is Issue #73; secrets and operational runbooks are Issue #75; release readiness is Issue #77; final reliability and CI review is Issue #79 (in progress; evidence pending).
 **Goal:** reliable, observable, testable operation without accidentally enabling live ingestion or deploying to production.
 
 ## Guardrails and boundary
@@ -18,7 +18,7 @@ The current CI already runs Ruff, unit tests and isolated PostgreSQL integration
 | 4 | `observability: implement read-only pipeline health assessment` (**#73**) | P1 | #65, ideally 3 | Assessed failed/stale-running runs with documented thresholds and no DB mutation; optional monitoring presentation or CLI. |
 | 5 | `ops: document secrets, least privilege and operational runbooks` (**#75**) | P1 | #65, 2–4 | Safe configuration, read-only dashboard grants, startup/shutdown, backup/recovery guidance and incident checklist. |
 | 6 | `ci: verify reproducible release artifacts and deployment readiness` (**#77**) | P1 | 1, 2, 5 | Deterministic container build/smoke, immutable tagging strategy, release checks and manual rollback plan. No automatic production deployment. |
-| 7 | `test(ops): run M9 end-to-end reliability and CI review` | P1 | 1–6 | Offline failure drills, health/observability assertions, complete tests, documentation and final M9 sign-off. |
+| 7 | `test(ops): run M9 end-to-end reliability and CI review` (**#79**) | P1 | 1–6 | Offline failure drills, health/observability assertions, complete tests, documentation and final M9 sign-off. |
 
 Each title is **proposed**, not an existing GitHub issue. Create the next issue only after the current item is reviewed/merged if you want to retain the established one-branch-at-a-time workflow.
 
@@ -86,7 +86,7 @@ flowchart TD
     Health["#73 Read-only operational health"]
     Runbook["#75 Secrets and runbooks"]
     Release["#77 Release verification"]
-    Review["7. Final M9 review"]
+    Review["#79 Final M9 review"]
 
     Audit --> CI
     Audit --> Compose
