@@ -1,7 +1,7 @@
 # M9 — CI/CD and observability implementation plan
 
 **Parent audit:** Issue #65; see [`m9-infrastructure-audit.md`](m9-infrastructure-audit.md).
-**Planning status:** infrastructure audit #65 merged; offline smoke verification is Issue #67. Other issue numbers are intentionally unassigned.
+**Planning status:** infrastructure audit #65 merged; offline smoke verification is Issue #67. Compose health and validation is Issue #69; other issue numbers are intentionally unassigned.
 **Goal:** reliable, observable, testable operation without accidentally enabling live ingestion or deploying to production.
 
 ## Guardrails and boundary
@@ -13,7 +13,7 @@ The current CI already runs Ruff, unit tests and isolated PostgreSQL integration
 | Order | Proposed GitHub title | Priority | Dependency | Deliverable |
 | --- | --- | --- | --- | --- |
 | 1 | `ci: add offline Airflow DAG and dashboard smoke verification` (**#67**) | P1 | #65 | CI jobs or steps that run deterministic DAG import/structure and dashboard startup/build checks without API/network side effects. |
-| 2 | `ops: add Airflow service health checks and Compose validation` | P1 | #65 | Version-compatible readiness/health probes, Compose configuration validation, local startup checks. |
+| 2 | `ops: add Airflow service health checks and Compose validation` (**#69**) | P1 | #65 | Version-compatible readiness/health probes, Compose configuration validation, local startup checks. |
 | 3 | `observability: standardize pipeline logs and safe diagnostics` | P1 | #65 | Structured event fields, DAG/run correlation, masking tests, logger conventions. |
 | 4 | `observability: implement read-only pipeline health assessment` | P1 | #65, ideally 3 | Assessed failed/stale-running runs with documented thresholds and no DB mutation; optional monitoring presentation or CLI. |
 | 5 | `ops: document secrets, least privilege and operational runbooks` | P1 | #65, 2–4 | Safe configuration, read-only dashboard grants, startup/shutdown, backup/recovery guidance and incident checklist. |
@@ -81,7 +81,7 @@ Each title is **proposed**, not an existing GitHub issue. Create the next issue 
 flowchart TD
     Audit["#65 Infrastructure audit"]
     CI["#67 Offline CI smoke checks"]
-    Compose["2. Compose health checks"]
+    Compose["#69 Compose health checks"]
     Logging["3. Structured logging"]
     Health["4. Read-only operational health"]
     Runbook["5. Secrets and runbooks"]
