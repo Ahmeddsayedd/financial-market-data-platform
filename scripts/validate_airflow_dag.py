@@ -33,7 +33,9 @@ def main() -> None:
 
     assert not dag_bag.import_errors, f"DAG import errors: {dag_bag.import_errors}"
 
-    dag = dag_bag.get_dag(DAG_ID)
+    # A local DagBag already contains parsed DAGs. get_dag() may query
+    # the Airflow metadata DB, which is intentionally absent in offline CI.
+    dag = dag_bag.dags.get(DAG_ID)
     assert dag is not None, f"DAG not found: {DAG_ID}"
 
     assert set(dag.task_ids) == set(EXPECTED_DEPENDENCIES)
