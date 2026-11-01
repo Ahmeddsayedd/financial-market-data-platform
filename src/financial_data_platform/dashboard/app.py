@@ -4,6 +4,12 @@ from datetime import date
 
 import psycopg
 
+from financial_data_platform.analytics.pipeline_monitoring import (
+    list_pipeline_runs,
+    list_pipeline_sources,
+    summarize_pipeline_runs,
+)
+
 from financial_data_platform.analytics.queries import (
     get_market_history,
     list_assets,
@@ -217,6 +223,97 @@ def render_indicator_charts(st) -> None:
     )
 
 
+def render_pipeline_monitoring(st) -> None:
+    """Show persisted run history and recorded quality counters, read-only."""
+    st.header("Pipeline monitoring")
+    st.write("Execution history and recorded quality counters from PostgreSQL Gold.")
+
+    try:
+        sources = list_pipeline_sources()
+    except (psycopg.Error, OSError, ValueError):
+        st.error(DATABASE_UNAVAILABLE_MESSAGE)
+        return
+
+    selected_source = st.selectbox("Pipeline source", ["All sources", *sources])
+    selected_status = st.selectbox(
+        "Pipeline status", ("All statuses", "success", "failed", "running")
+    )
+    source = None if selected_source == "All sources" else selected_source
+    status = None if selected_status == "All statuses" else selected_status
+
+    start_date: date | None = None
+    end_date: date | None = None
+    if st.checkbox("Filter pipeline start dates (UTC)", value=False):
+        start_date = st.date_input("Pipeline start date", value=date(2000, 1, 1))
+        end_date = st.date_input("Pipeline end date", value=date.today())
+        if (
+            type(start_date) is not date
+            or type(end_date) is not date
+            or start_date > end_date
+        ):
+            st.warning("Start date must be on or before end date.")
+            return
+
+    try:
+        runs = list_pipeline_runs(
+            source=source,
+            status=status,
+            start_date=start_date,
+            end_date=end_date,
+            limit=500,
+        )
+    except (psycopg.Error, OSError, ValueError):
+        st.error(DATABASE_UNAVAILABLE_MESSAGE)
+        return
+
+    if not runs:
+        st.info("No pipeline runs match the selected filters.")
+        return
+
+    if len(runs) == 500:
+        st.warning(
+            "The 500-run query limit was reached. Only the most recent matching "
+            "runs are displayed, and totals refer to this displayed selection."
+        )
+
+    summary = summarize_pipeline_runs(runs)
+    st.metric("Displayed runs", summary.run_count)
+    st.metric("Successful runs", summary.success_count)
+    st.metric("Failed runs", summary.failed_count)
+    st.metric("Running runs", summary.running_count)
+    st.metric("Extracted records", summary.records_extracted)
+    st.metric("Validated records", summary.records_validated)
+    st.metric("Transformed records", summary.records_transformed)
+    st.metric("Loaded records", summary.records_loaded)
+    st.metric("Rejected records", summary.records_rejected)
+    st.caption(
+        "Counters are recorded by the pipeline, not inferred from raw files. "
+        "Rejected-record counts do not identify individual quality violations. "
+        "Totals describe only the displayed runs."
+    )
+    st.dataframe(
+        [
+            {
+                "Run ID": str(run.run_id),
+                "DAG": run.dag_id or "—",
+                "Source": run.source or "—",
+                "Status": run.status,
+                "Started (UTC)": run.started_at,
+                "Finished (UTC)": run.finished_at,
+                "Duration (s)": run.duration_seconds,
+                "Extracted": run.records_extracted,
+                "Validated": run.records_validated,
+                "Transformed": run.records_transformed,
+                "Loaded": run.records_loaded,
+                "Rejected": run.records_rejected,
+            }
+            for run in runs
+        ],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
 def main() -> None:
     """Configure and render the initial Streamlit dashboard page."""
     # Import the UI only when launched: existing CI installs [dev], not [dashboard].
@@ -231,13 +328,17 @@ def main() -> None:
     st.caption("Read-only analytics from the PostgreSQL Gold warehouse")
 
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Page", ("Overview", "Market charts", "Indicators"))
+    page = st.sidebar.radio(
+        "Page", ("Overview", "Market charts", "Indicators", "Pipeline monitoring")
+    )
     if page == "Overview":
         render_overview(st)
     elif page == "Market charts":
         render_market_charts(st)
     elif page == "Indicators":
         render_indicator_charts(st)
+    elif page == "Pipeline monitoring":
+        render_pipeline_monitoring(st)
 
 
 if __name__ == "__main__":
