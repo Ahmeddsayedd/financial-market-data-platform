@@ -42,7 +42,9 @@ def test_main_configures_page_and_navigation():
         page_icon="📈",
         layout="wide",
     )
-    st.sidebar.radio.assert_called_once_with("Page", ("Overview", "Market charts"))
+    st.sidebar.radio.assert_called_once_with(
+        "Page", ("Overview", "Market charts", "Indicators")
+    )
     render_overview.assert_called_once_with(st)
 
 
