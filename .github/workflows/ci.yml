@@ -169,6 +169,31 @@ jobs:
       - name: Validate Compose configuration without revealing resolved secrets
         run: python scripts/validate_compose_health.py
 
+  release-dashboard-image:
+    name: Dashboard image build and offline health smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build dashboard runtime image (no secrets or datasets)
+        run: docker build --pull -f Dockerfile.dashboard -t financial-market-dashboard:ci .
+
+      - name: Verify dashboard starts without network or database
+        run: |
+          docker run --rm --network none \
+            --entrypoint python \
+            financial-market-dashboard:ci \
+            scripts/verify_dashboard_image.py
+
+      - name: Verify non-root runtime user
+        run: |
+          test "$(docker image inspect financial-market-dashboard:ci --format '{{.Config.User}}')" = dashboard
+
   airflow-smoke:
     name: Offline Airflow DAG smoke
     runs-on: ubuntu-latest

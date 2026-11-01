@@ -1,0 +1,25 @@
+# Issue #77: controlled local dashboard runtime; build does not need credentials.
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /opt/financial-market
+
+# The build context is allowlisted by .dockerignore; COPY only application code.
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
+COPY scripts/verify_dashboard_image.py ./scripts/verify_dashboard_image.py
+
+RUN python -m pip install --no-cache-dir ".[dashboard]" \
+    && useradd --system --create-home --uid 10001 dashboard \
+    && chown -R dashboard:dashboard /opt/financial-market
+
+USER dashboard
+EXPOSE 8501
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3).close()" || exit 1
+
+CMD ["python", "-m", "streamlit", "run", "src/financial_data_platform/dashboard/app.py", "--server.headless=true", "--server.address=0.0.0.0", "--server.port=8501", "--browser.gatherUsageStats=false"]
