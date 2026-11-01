@@ -3,7 +3,7 @@
 The dashboard is a read-only view of the existing PostgreSQL Gold warehouse.
 It retrieves available assets using the analytics query layer introduced in
 Issue #53. Issue #57 adds interactive historical OHLCV and volume charts;
-Issue #59 adds financial-indicator visualizations; pipeline monitoring remains future M8 work.
+Issue #59 adds financial-indicator visualizations; Issue #61 adds pipeline monitoring.
 
 ## Install
 
@@ -132,3 +132,47 @@ python -m pytest -q tests/unit/test_dashboard_indicators.py tests/unit/test_indi
 
 Only use isolated test data when visually verifying populated charts; never
 seed the primary warehouse for UI demonstrations.
+
+## Pipeline monitoring (Issue #61)
+
+The **Pipeline monitoring** page displays persisted `pipeline_run` records from
+PostgreSQL Gold. It provides source, status, and optional inclusive **UTC**
+execution-start date filters. Results show the newest runs first, up to 500.
+
+The page reports counts of **displayed** successful, failed and running runs,
+plus the stored record counters: extracted, validated, transformed, loaded and
+rejected. Counts reflect pipeline tracking snapshots; a zero can also mean a
+stage was disabled or did not report an observation count. A loaded counter
+includes inserted and updated observations, not unchanged replays. Do not
+interpret extracted records as the number of Twelve Data requests or files.
+
+The page displays the run UUID, DAG ID, start/finish times, source, status,
+duration and recorded counters. If the query reaches 500 rows, totals cover
+only those returned runs, not all historical matches. A separate date or source
+filter can narrow the displayed selection.
+
+Detailed violation codes are produced by the separate quality-report and
+quarantine JSON mechanism. They are **not linked to `pipeline_run` rows** in
+the current schema and are therefore **not** claimed or derived from the
+recorded rejection counter. The monitoring page does not read arbitrary
+filesystem paths or expose quarantine record payloads.
+
+All monitoring queries use PostgreSQL read-only transactions and parameter
+binding. They do not trigger Airflow, ingestion, or SQL updates. For production
+use, configure a SELECT-only database role for additional protection.
+
+Run focused tests using:
+
+```bash
+python -m pytest -q tests/unit/test_pipeline_monitoring_queries.py tests/unit/test_dashboard_pipeline_monitoring.py
+```
+
+Run isolated PostgreSQL integration tests with the established test runner:
+
+```bash
+python scripts/run_tests.py tests/integration/test_pipeline_monitoring_integration.py -v
+```
+
+Only `financial_market_test` is used for the integration fixture, which
+removes only test-owned UUIDs. Do not point integration tests at a primary
+warehouse.

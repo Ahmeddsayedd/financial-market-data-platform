@@ -43,7 +43,7 @@ def test_main_configures_page_and_navigation():
         layout="wide",
     )
     st.sidebar.radio.assert_called_once_with(
-        "Page", ("Overview", "Market charts", "Indicators")
+        "Page", ("Overview", "Market charts", "Indicators", "Pipeline monitoring")
     )
     render_overview.assert_called_once_with(st)
 
