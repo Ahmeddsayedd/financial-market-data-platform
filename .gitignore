@@ -26,3 +26,6 @@ airflow/logs/
 airflow/airflow.cfg
 airflow/webserver_config.py
 airflow/standalone_admin_password.txt
+
+# Offline M10 synthetic datasets and manifests (local artifacts)
+data/experiments/

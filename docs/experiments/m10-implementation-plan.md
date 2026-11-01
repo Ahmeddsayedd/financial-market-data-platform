@@ -7,7 +7,7 @@
 | Order | Proposed issue title | Depends on | Deliverable / acceptance boundary |
 | --- | --- | --- | --- |
 | 1 | `experiment: design reproducible evaluation framework and metrics` (#81) | M9 | This methodology, pure metric definitions, and contract tests; no benchmark claims |
-| 2 | `experiment: generate deterministic market-data workload fixtures` | #81 | Seeded, labeled, replayable provider-shaped input; size tiers and malformed-vs-financial-invalid cases, fixture hashes; no provider traffic |
+| 2 | `experiment: generate deterministic synthetic market-data workloads` (**#83**) | #81 | Seeded, labeled, replayable provider-shaped input; size tiers and malformed-vs-financial-invalid cases, fixture hashes; no provider traffic |
 | 3 | `experiment: implement isolated ETL benchmark runner` | 1–2 | Bounded, opt-in local Raw→Silver benchmark, monotonic stage timings, JSONL attempt schema, warm-ups, failed-attempt capture; temp dirs |
 | 4 | `experiment: evaluate financial data quality and rejection behavior` | 2–3 | Measured record-level rates, code occurrence breakdown, parser failure segregation, expected-vs-observed validity with denominators |
 | 5 | `experiment: evaluate Gold persistence and repeatability` | 2–3 | Operator-approved isolated `financial_market_test` scenarios, inserted/updated/unchanged/rejected counts, logical-state comparison and cleanup review |
@@ -28,3 +28,7 @@ The sequence is provisional and may be narrowed after reviewing existing fixture
 ## Outputs intended for M11 / M12
 
 The final M10 results should provide research questions, justified dataset design, machine-readable anonymized measurements, runtime/quality charts, repeatability evidence, threat-to-validity notes, and repeatable commands. They support an academic/portfolio narrative but are **not** statements of live API or cloud production performance.
+
+## Issue #83 implementation
+
+The deterministic, offline generator and manifest contracts are documented in [synthetic workloads](synthetic-workloads.md). The 100/1,000/10,000 observation tiers are fixture definitions, not benchmark evidence. Actual observed CI and local test results must be recorded by the PR reviewer.
