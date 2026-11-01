@@ -92,5 +92,5 @@ def test_final_review_documentation_is_linked_and_not_prematurely_signed_off():
     assert "m9-final-verification.md" in index
     assert "#79" in plan
     assert "PENDING" in report
-    assert "527 passed" in report  # historical baseline, not current proof
+    assert "527 tests passed" in report  # historical baseline, not current proof
     assert "Do not close" in report
