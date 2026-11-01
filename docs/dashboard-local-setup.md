@@ -2,8 +2,8 @@
 
 The dashboard is a read-only view of the existing PostgreSQL Gold warehouse.
 It retrieves available assets using the analytics query layer introduced in
-Issue #53. This foundation does not yet include price charts, indicators, or
-pipeline monitoring pages; those belong to subsequent M8 issues.
+Issue #53. Issue #57 adds interactive historical OHLCV and volume charts;
+financial indicator overlays and pipeline monitoring remain future M8 work.
 
 ## Install
 
@@ -71,3 +71,34 @@ For the complete suite, use the existing local test runner with an isolated
 ```bash
 python scripts/run_tests.py
 ```
+
+## Market charts (Issue #57)
+
+The sidebar includes **Market charts** alongside the existing **Overview** page.
+Market charts are built with Plotly, installed through the dashboard extra.
+Select a source and symbol (the two together uniquely identify an asset). You may
+optionally enable inclusive start/end observation dates. The candlestick chart
+shows recorded daily OHLC prices, and a separate bar chart shows trading volume.
+The summary reports the number of selected observations, the latest close in the
+selection, and the difference between its first and last closing prices.
+
+The dashboard uses the existing `get_market_history()` read-only query. The
+current query returns the **earliest** 5,000 matching observations in date order.
+When 5,000 rows are returned, the app warns that more rows *may* exist and that
+users should narrow their date range rather than assume the result is complete.
+This version intentionally does not implement pagination or latest-N queries.
+
+Decimal market values remain exact in the analytics query layer and summary;
+Plotly receives floating-point copies solely for chart rendering. The dashboard
+does not recompute persisted Gold financial indicators, ingest prices, or write
+to the database.
+
+Run the market-chart unit tests (no Streamlit/Plotly installation required):
+
+```bash
+python -m pytest -q tests/unit/test_dashboard_market_charts.py tests/unit/test_market_chart_figures.py
+```
+
+To see populated charts, connect the application to a Gold warehouse containing
+previously validated historical observations. Do **not** load test fixtures into
+a primary/production warehouse just to demonstrate the UI.
