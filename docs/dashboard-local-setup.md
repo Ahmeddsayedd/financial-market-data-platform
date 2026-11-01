@@ -3,7 +3,7 @@
 The dashboard is a read-only view of the existing PostgreSQL Gold warehouse.
 It retrieves available assets using the analytics query layer introduced in
 Issue #53. Issue #57 adds interactive historical OHLCV and volume charts;
-Issue #59 adds financial-indicator visualizations; Issue #61 adds pipeline monitoring.
+Issue #59 adds financial-indicator visualizations; Issue #61 adds pipeline monitoring. Issue #63 provides a reproducible populated-dashboard review.
 
 ## Install
 
@@ -176,3 +176,8 @@ python scripts/run_tests.py tests/integration/test_pipeline_monitoring_integrati
 Only `financial_market_test` is used for the integration fixture, which
 removes only test-owned UUIDs. Do not point integration tests at a primary
 warehouse.
+
+## Populated dashboard verification (Issue #63)
+
+See [`dashboard-e2e-review.md`](dashboard-e2e-review.md) for a test-only seed/cleanup procedure, a four-page visual checklist, and PostgreSQL-backed automated verification. Demo data is prohibited outside the isolated `financial_market_test` instance.
+
