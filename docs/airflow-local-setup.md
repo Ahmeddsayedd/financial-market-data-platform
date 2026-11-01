@@ -57,6 +57,14 @@ docker compose -f compose.airflow.yaml ps -a
 
 The PostgreSQL database, API server, scheduler, and DAG processor should be running. The initialization container should have exited successfully.
 
+## Health checks and safe Compose validation (Issue #69)
+
+Run `python scripts/validate_compose_health.py` to validate both Compose
+configurations without printing interpolated secrets or starting services.
+The API server, scheduler and DAG processor now have dedicated health probes.
+See [`operations/airflow-compose-health.md`](operations/airflow-compose-health.md)
+for probe meanings, runtime verification, and safe troubleshooting.
+
 ## Access the Web Interface
 
 Open:
