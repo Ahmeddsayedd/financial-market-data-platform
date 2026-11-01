@@ -9,7 +9,7 @@
 | 1 | `experiment: design reproducible evaluation framework and metrics` (#81) | M9 | This methodology, pure metric definitions, and contract tests; no benchmark claims |
 | 2 | `experiment: generate deterministic synthetic market-data workloads` (**#83**) | #81 | Seeded, labeled, replayable provider-shaped input; size tiers and malformed-vs-financial-invalid cases, fixture hashes; no provider traffic |
 | 3 | `experiment: implement isolated ETL benchmark runner` (**#85**) | 1–2 | Bounded, opt-in local Raw→Silver benchmark, monotonic stage timings, JSONL attempt schema, warm-ups, failed-attempt capture; temp dirs |
-| 4 | `experiment: evaluate financial data quality and rejection behavior` | 2–3 | Measured record-level rates, code occurrence breakdown, parser failure segregation, expected-vs-observed validity with denominators |
+| 4 | `experiment: evaluate financial data quality and rejection behavior` (**#87**) | 2–3 | Measured record-level rates, code occurrence breakdown, parser failure segregation, expected-vs-observed validity with denominators |
 | 5 | `experiment: evaluate Gold persistence and repeatability` | 2–3 | Operator-approved isolated `financial_market_test` scenarios, inserted/updated/unchanged/rejected counts, logical-state comparison and cleanup review |
 | 6 | `experiment: analyze performance, variability and results` | 3–5 | Repeated-run distributions, throughput/time curves, limitations, sanitized result tables/figures; no fabricated benchmark data |
 | 7 | `test(experiment): reproduce and review M10 evaluation evidence` | 1–6 | Independent reproduction instructions and cross-checks, all Python tests and seven CI gates; final limitations and milestone sign-off |
@@ -36,3 +36,11 @@ The deterministic, offline generator and manifest contracts are documented in [s
 ## Issue #85 implementation
 
 The [isolated Raw-to-Silver benchmark runner](etl-benchmark-runner.md) consumes verified Issue #83 fixtures and emits bounded per-attempt JSONL evidence with explicit warm-up, monotonic timing, failure and isolation semantics. This is an experimental *instrument*, not a published benchmark result; later M10 issues analyze actual observations.
+
+## Issue #87 implementation
+
+The [financial data-quality evidence evaluator](quality-evaluation.md) compares
+verified synthetic manifest expectations with actual benchmark JSONL outcomes,
+including record-level counts, per-rule violation occurrences and explicitly
+expected parser failures. It is an offline evidence consistency check, not a
+new ETL runner or independent real-market accuracy study.
