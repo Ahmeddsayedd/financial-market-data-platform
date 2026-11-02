@@ -429,3 +429,23 @@ def test_fetch_daily_time_series_rejects_non_object_json():
         match="JSON object",
     ):
         client.fetch_daily_time_series("AAPL")
+
+
+def test_optional_outputsize_sent_when_explicit():
+    response = Mock(status_code=200)
+    response.json.return_value = {"status": "ok", "meta": {"symbol": "AAPL"}}
+    session = Mock()
+    session.get.return_value = response
+    client = TwelveDataClient(api_key="test-key", session=session, max_retries=0)
+    client.fetch_daily_time_series("AAPL", outputsize=100)
+    assert session.get.call_args.kwargs["params"]["outputsize"] == 100
+    assert session.get.call_count == 1
+
+
+@pytest.mark.parametrize("outputsize", [0, -1, 5001])
+def test_invalid_outputsize_rejected_before_network(outputsize):
+    session = Mock()
+    client = TwelveDataClient(api_key="test-key", session=session)
+    with pytest.raises(ValueError, match="outputsize"):
+        client.fetch_daily_time_series("AAPL", outputsize=outputsize)
+    session.get.assert_not_called()

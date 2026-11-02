@@ -32,18 +32,27 @@ class TwelveDataClient:
         self.max_retries = max_retries
         self.sleep = sleep
 
-    def fetch_daily_time_series(self, symbol: str) -> dict[str, Any]:
+    def fetch_daily_time_series(
+        self, symbol: str, *, outputsize: int | None = None
+    ) -> dict[str, Any]:
         """Fetch daily time-series data for a symbol."""
+
+        if outputsize is not None and not 1 <= outputsize <= 5000:
+            raise ValueError("outputsize must be between 1 and 5000")
+
+        params = {
+            "symbol": symbol,
+            "interval": "1day",
+            "apikey": self.api_key,
+        }
+        if outputsize is not None:
+            params["outputsize"] = outputsize
 
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.session.get(
                     self.BASE_URL,
-                    params={
-                        "symbol": symbol,
-                        "interval": "1day",
-                        "apikey": self.api_key,
-                    },
+                    params=params,
                     timeout=10,
                 )
             except (requests.Timeout, requests.ConnectionError) as exc:

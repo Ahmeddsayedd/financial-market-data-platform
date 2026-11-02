@@ -37,3 +37,5 @@ admin password files or raw log content containing secrets.
   ingestion, loading, or DAG scheduling.
 
 - [Issue #101 analytics verification and traceability](issue-101-analytics-verification.md)
+
+- [Issue #103: controlled Twelve Data live verification](issue-103-twelve-data-live-verification.md)
