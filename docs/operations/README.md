@@ -39,3 +39,5 @@ admin password files or raw log content containing secrets.
 - [Issue #101 analytics verification and traceability](issue-101-analytics-verification.md)
 
 - [Issue #103: controlled Twelve Data live verification](issue-103-twelve-data-live-verification.md)
+
+- [Issue #104: reproducible real-data replay and read-only Gold evidence](issue-104-end-to-end-evidence.md)
