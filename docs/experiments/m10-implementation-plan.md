@@ -11,7 +11,7 @@
 | 3 | `experiment: implement isolated ETL benchmark runner` (**#85**) | 1–2 | Bounded, opt-in local Raw→Silver benchmark, monotonic stage timings, JSONL attempt schema, warm-ups, failed-attempt capture; temp dirs |
 | 4 | `experiment: evaluate financial data quality and rejection behavior` (**#87**) | 2–3 | Measured record-level rates, code occurrence breakdown, parser failure segregation, expected-vs-observed validity with denominators |
 | 5 | `experiment: evaluate Gold persistence and repeatability` (**#89**) | 2–3 | Operator-approved isolated `financial_market_test` scenarios, inserted/updated/unchanged/rejected counts, logical-state comparison and cleanup review |
-| 6 | `experiment: analyze performance, variability and results` | 3–5 | Repeated-run distributions, throughput/time curves, limitations, sanitized result tables/figures; no fabricated benchmark data |
+| 6 | `experiment: analyze performance, variability and results` (**#91**) | 3–5 | Repeated-run distributions, throughput/time curves, limitations, sanitized result tables/figures; no fabricated benchmark data |
 | 7 | `test(experiment): reproduce and review M10 evaluation evidence` | 1–6 | Independent reproduction instructions and cross-checks, all Python tests and seven CI gates; final limitations and milestone sign-off |
 
 The sequence is provisional and may be narrowed after reviewing existing fixture generation, CI capacity, and available storage. No issue in this plan creates automatic production workloads.
@@ -49,11 +49,19 @@ new ETL runner or independent real-market accuracy study.
 
 The [rollback-only Gold repeatability evaluation](gold-repeatability.md) exercises insert, exact replay, newer update, stale replay, and equal-timestamp conflict against the approved isolated test database without committing experiment rows. It is not a committed durability benchmark.
 
-## Issue #6 — Offline performance analysis
+## Issue #91 — Offline performance analysis
 
 The [offline performance analyzer](performance-analysis.md) validates Issue #85
 schema-v1 benchmark JSONL files, summarizes successful measured attempts,
 counts failures separately, and compares compatible synthetic workload tiers.
 It emits reproducible JSON and Markdown reports without rerunning ETL or
-claiming unmeasured per-substage bottlenecks. The GitHub issue number is
-assigned independently and should be recorded after issue creation.
+claiming unmeasured per-substage bottlenecks. This implementation was merged in GitHub issue #91.
+
+## Item 7 — Reproducibility review and closeout
+
+The [M10 reproducibility guide and evidence review checklist](m10-reproducibility-closeout.md)
+connects the six existing deliverables with precise invocation order, input/output
+contracts, reproducible fixture provenance, an optional strictly authorized Gold
+check and a read-only cross-report checker (`scripts/review_m10_evidence.py`).
+The final issue number and CI/merge outcome must be recorded by the reviewer;
+this implementation plan does not represent pending checks as complete.
