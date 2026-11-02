@@ -87,3 +87,7 @@ Issue #103 real AAPL response. An optional read-only audit of
 `financial_market_test` reports persisted Gold counts and indicator coverage.
 This experiment makes no provider requests, performs no Gold writes, and does
 not claim whole-Airflow-DAG performance.
+
+For a run-specific, read-only evidence collection procedure covering local Airflow
+tracking, existing Gold indicators, and populated dashboard review, see
+[`docs/operations/airflow-end-to-end-demonstration.md`](docs/operations/airflow-end-to-end-demonstration.md).
