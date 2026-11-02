@@ -539,9 +539,11 @@ def test_sma_7_uses_gold_history_across_batches(monkeypatch):
                 [seventh],
             )
 
+            # The first observation now receives a defined zero drawdown,
+            # so all seven new Gold indicator rows require an initial write.
             assert counts == {
-                "updated": 6,
-                "unchanged": 1,
+                "updated": 7,
+                "unchanged": 0,
             }
 
             cursor.execute(
@@ -555,6 +557,18 @@ def test_sma_7_uses_gold_history_across_batches(monkeypatch):
             )
 
             assert cursor.fetchone()[0] == Decimal("104.00000000")
+
+            # Running-peak drawdown starts at zero, even before an SMA
+            # reaches its minimum window length.
+            cursor.execute(
+                """
+                SELECT drawdown
+                FROM fact_market_metrics
+                WHERE asset_key = %s AND date_key = %s
+                """,
+                (asset_key, 20261001),
+            )
+            assert cursor.fetchone()[0] == Decimal("0.00000000")
 
     finally:
         connection.rollback()
@@ -677,9 +691,11 @@ def test_atomic_gold_loading_persists_market_data_and_indicators(
             "rejected": 0,
         }
 
+        # Drawdown is defined as zero at the first observed peak; both
+        # observations therefore receive persisted indicator values.
         assert counts["indicators"] == {
-            "updated": 1,
-            "unchanged": 1,
+            "updated": 2,
+            "unchanged": 0,
         }
 
         with connect_to_database() as connection:
@@ -799,8 +815,9 @@ def test_atomic_gold_loading_retry_is_idempotent(monkeypatch):
                 "rejected": 0,
             },
             "indicators": {
-                "updated": 0,
-                "unchanged": 1,
+                # The initial observation stores a zero running-peak drawdown.
+                "updated": 1,
+                "unchanged": 0,
             },
         }
 

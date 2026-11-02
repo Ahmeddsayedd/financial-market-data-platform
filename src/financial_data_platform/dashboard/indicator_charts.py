@@ -13,6 +13,13 @@ def has_persisted_indicators(observations: list[MarketObservation]) -> bool:
             record.daily_return_pct,
             record.sma_7,
             record.sma_30,
+            record.log_return,
+            record.sma_20,
+            record.sma_50,
+            record.rolling_volatility_20d,
+            record.rsi_14,
+            record.drawdown,
+            record.volume_zscore,
         )
     )
 
@@ -103,3 +110,58 @@ def make_daily_return_chart(observations: list[MarketObservation], symbol: str):
         yaxis_title="Return (%)",
     )
     return figure
+
+
+def make_advanced_indicator_charts(observations: list[MarketObservation], symbol: str):
+    """Return read-only plots for persisted advanced indicators."""
+    import plotly.graph_objects as go
+
+    dates = [record.observation_date for record in observations]
+    specs = (
+        ("rsi_14", "RSI 14", "Index (0–100)"),
+        ("rolling_volatility_20d", "20-day annualized volatility", "Percent"),
+        ("drawdown", "Running-peak drawdown", "Percent"),
+        ("volume_zscore", "20-day volume z-score", "Standard deviations"),
+        ("log_return", "Daily logarithmic return", "Log return"),
+    )
+    sma_figure = go.Figure(
+        data=[
+            go.Scatter(
+                x=dates,
+                y=_values(observations, field),
+                mode="lines",
+                name=label,
+                connectgaps=False,
+            )
+            for field, label in (
+                ("close", "Close"),
+                ("sma_20", "SMA 20"),
+                ("sma_50", "SMA 50"),
+            )
+        ]
+    )
+    sma_figure.update_layout(
+        title=f"{symbol} — close and SMA 20/50",
+        xaxis_title="Observation date",
+        yaxis_title="Price (asset currency)",
+    )
+    charts = [sma_figure]
+    for field, label, unit in specs:
+        figure = go.Figure(
+            data=[
+                go.Scatter(
+                    x=dates,
+                    y=_values(observations, field),
+                    mode="lines",
+                    name=label,
+                    connectgaps=False,
+                )
+            ]
+        )
+        figure.update_layout(
+            title=f"{symbol} — {label}",
+            xaxis_title="Observation date",
+            yaxis_title=unit,
+        )
+        charts.append(figure)
+    return charts

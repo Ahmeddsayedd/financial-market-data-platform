@@ -108,10 +108,14 @@ a primary/production warehouse just to demonstrate the UI.
 
 ## Financial indicators (Issue #59)
 
-The **Indicators** navigation page plots the four currently persisted metrics:
-`price_change`, `daily_return_pct`, `sma_7`, and `sma_30`. The close/SMA
-figure overlays SMA 7 and SMA 30 on stored closing prices; separate figures
-show daily price changes and percentage returns.
+The **Indicators** navigation page plots all twelve persisted metrics, including
+`price_change`, `daily_return_pct`, SMA 7/20/30/50, logarithmic returns,
+rolling volatility, Wilder RSI 14, running drawdown, and volume z-score.
+The original close/SMA figure overlays SMA 7 and SMA 30. A second close/SMA
+figure overlays SMA 20 and SMA 50, and additional figures show change,
+returns, historical volatility, RSI, drawdown, and volume z-scores.
+See [indicator definitions](financial-indicator-definitions.md) for formulas,
+window conventions, and NULL warm-up periods.
 
 Select source and symbol independently, then optionally filter the inclusive
 observation-date range. Data comes from the same `get_market_history()`

@@ -62,6 +62,7 @@ def test_indicators_reuse_read_only_market_query_and_show_three_figures():
         patch.object(app, "make_price_sma_chart", return_value="sma") as sma,
         patch.object(app, "make_price_change_chart", return_value="change") as change,
         patch.object(app, "make_daily_return_chart", return_value="return") as ret,
+        patch.object(app, "make_advanced_indicator_charts", return_value=["advanced"]),
     ):
         app.render_indicator_charts(st)
     list_query.assert_called_once_with()
@@ -75,6 +76,7 @@ def test_indicators_reuse_read_only_market_query_and_show_three_figures():
         "sma",
         "change",
         "return",
+        "advanced",
     ]
 
 
@@ -165,10 +167,13 @@ def test_indicators_communicate_all_missing_indicators_but_keep_close_chart():
         patch.object(app, "make_price_sma_chart", return_value="sma"),
         patch.object(app, "make_price_change_chart", return_value="change"),
         patch.object(app, "make_daily_return_chart", return_value="return"),
+        patch.object(
+            app, "make_advanced_indicator_charts", return_value=["advanced"] * 6
+        ),
     ):
         app.render_indicator_charts(st)
     st.info.assert_called_once()
-    assert st.plotly_chart.call_count == 3
+    assert st.plotly_chart.call_count == 9
 
 
 def test_indicators_handle_db_connection_failure_without_leaking_secrets():
@@ -201,6 +206,9 @@ def test_indicators_warn_at_5000_row_boundary():
         patch.object(app, "make_price_sma_chart", return_value="sma"),
         patch.object(app, "make_price_change_chart", return_value="change"),
         patch.object(app, "make_daily_return_chart", return_value="return"),
+        patch.object(
+            app, "make_advanced_indicator_charts", return_value=["advanced"] * 6
+        ),
     ):
         app.render_indicator_charts(st)
     assert "5,000" in st.warning.call_args.args[0]

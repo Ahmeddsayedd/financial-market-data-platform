@@ -31,6 +31,14 @@ class MarketObservation:
     daily_return_pct: Decimal | None
     sma_7: Decimal | None
     sma_30: Decimal | None
+    period_return: Decimal | None = None
+    log_return: Decimal | None = None
+    sma_20: Decimal | None = None
+    sma_50: Decimal | None = None
+    rolling_volatility_20d: Decimal | None = None
+    rsi_14: Decimal | None = None
+    drawdown: Decimal | None = None
+    volume_zscore: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -40,6 +48,14 @@ class IndicatorObservation:
     daily_return_pct: Decimal | None
     sma_7: Decimal | None
     sma_30: Decimal | None
+    period_return: Decimal | None = None
+    log_return: Decimal | None = None
+    sma_20: Decimal | None = None
+    sma_50: Decimal | None = None
+    rolling_volatility_20d: Decimal | None = None
+    rsi_14: Decimal | None = None
+    drawdown: Decimal | None = None
+    volume_zscore: Decimal | None = None
 
 
 def _nonblank(value: str, name: str) -> None:
@@ -106,13 +122,15 @@ def get_market_history(
     end_date: date | None = None,
     limit: int = 5000,
 ) -> list[MarketObservation]:
-    """Read historical OHLCV and the four currently persisted indicators."""
+    """Read historical OHLCV and all persisted financial indicators."""
     _validate_filters(source, symbol, start_date, end_date, limit)
     rows = _read_rows(
         """
         SELECT d.full_date, f.open, f.high, f.low, f.close, f.volume,
                f.extracted_at, f.price_change, f.daily_return_pct,
-               f.sma_7, f.sma_30
+               f.sma_7, f.sma_30,
+               f.period_return, f.log_return, f.sma_20, f.sma_50,
+               f.rolling_volatility_20d, f.rsi_14, f.drawdown, f.volume_zscore
         FROM fact_market_metrics AS f
         JOIN dim_asset AS a ON a.asset_key = f.asset_key
         JOIN dim_date AS d ON d.date_key = f.date_key
@@ -140,7 +158,9 @@ def get_indicator_history(
     rows = _read_rows(
         """
         SELECT d.full_date, f.price_change, f.daily_return_pct,
-               f.sma_7, f.sma_30
+               f.sma_7, f.sma_30,
+               f.period_return, f.log_return, f.sma_20, f.sma_50,
+               f.rolling_volatility_20d, f.rsi_14, f.drawdown, f.volume_zscore
         FROM fact_market_metrics AS f
         JOIN dim_asset AS a ON a.asset_key = f.asset_key
         JOIN dim_date AS d ON d.date_key = f.date_key

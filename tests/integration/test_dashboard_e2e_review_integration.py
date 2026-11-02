@@ -122,9 +122,15 @@ def test_all_four_pages_render_populated_data_without_writing(populated_demo):
         patch.object(app, "make_price_sma_chart", return_value="sma"),
         patch.object(app, "make_price_change_chart", return_value="change"),
         patch.object(app, "make_daily_return_chart", return_value="return"),
+        patch.object(
+            app,
+            "make_advanced_indicator_charts",
+            return_value=[f"advanced-{index}" for index in range(6)],
+        ),
     ):
         app.render_indicator_charts(st)
-    assert st.plotly_chart.call_count == 3
+    # Three legacy charts plus six persisted advanced-indicator charts.
+    assert st.plotly_chart.call_count == 9
     st.reset_mock()
 
     st.selectbox.side_effect = [DEMO_SOURCE, "All statuses"]

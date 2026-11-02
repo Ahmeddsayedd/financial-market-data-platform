@@ -52,36 +52,42 @@ def update_gold_indicators(
             f"Stale market observation: asset_key={asset_key}, date_key={date_key}"
         )
 
+    columns = (
+        "price_change",
+        "daily_return_pct",
+        "sma_7",
+        "sma_30",
+        "period_return",
+        "log_return",
+        "sma_20",
+        "sma_50",
+        "rolling_volatility_20d",
+        "rsi_14",
+        "drawdown",
+        "volume_zscore",
+    )
+    assignments = ",\n            ".join(f"{column} = %s" for column in columns)
+    changes = "\n            OR ".join(
+        f"{column} IS DISTINCT FROM %s" for column in columns
+    )
     cursor.execute(
-        """
+        f"""
         UPDATE fact_market_metrics
         SET
-            price_change = %s,
-            daily_return_pct = %s,
-            sma_7 = %s,
-            sma_30 = %s
+            {assignments}
         WHERE asset_key = %s
         AND date_key = %s
         AND extracted_at = %s
         AND (
-            price_change IS DISTINCT FROM %s
-            OR daily_return_pct IS DISTINCT FROM %s
-            OR sma_7 IS DISTINCT FROM %s
-            OR sma_30 IS DISTINCT FROM %s
+            {changes}
         )
         """,
         (
-            values["price_change"],
-            values["daily_return_pct"],
-            values["sma_7"],
-            values["sma_30"],
+            *(values[column] for column in columns),
             asset_key,
             date_key,
             indicators.record.extracted_at,
-            values["price_change"],
-            values["daily_return_pct"],
-            values["sma_7"],
-            values["sma_30"],
+            *(values[column] for column in columns),
         ),
     )
 

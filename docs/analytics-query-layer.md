@@ -11,10 +11,13 @@ Module: `financial_data_platform.analytics.queries`
   company metadata and a stripped three-character currency.
 - `get_market_history(source, symbol, *, start_date=None, end_date=None, limit=5000)`
   returns chronologically ordered `MarketObservation` objects with OHLCV,
-  extraction time, and the four currently persisted indicators.
+  extraction time, and twelve persisted indicators (four original and eight
+  advanced columns).
 - `get_indicator_history(source, symbol, *, start_date=None, end_date=None, limit=5000)`
   returns chronologically ordered `IndicatorObservation` objects containing the
-  four persisted indicators: `price_change`, `daily_return_pct`, `sma_7`, `sma_30`.
+  existing `price_change`, `daily_return_pct`, `sma_7`, `sma_30`, plus
+  `period_return`, `log_return`, `sma_20`, `sma_50`,
+  `rolling_volatility_20d`, `rsi_14`, `drawdown`, `volume_zscore`.
 
 Date filters are inclusive. An unknown asset or empty range returns `[]`.
 The `limit` must be between 1 and 5000; the API returns the *earliest* matching
@@ -22,7 +25,9 @@ observations when the limit is reached. Pagination and descending/latest-N
 queries are separate future enhancements.
 
 `Decimal` is preserved for financial values, and missing indicators remain
-`None`. No future/planned indicator columns are exposed as if populated.
+`None`. Warm-up periods are returned as `None` until sufficient source
+history is present.
+Existing columns stay available for backward compatibility.
 
 ## Read-only behavior and security
 
