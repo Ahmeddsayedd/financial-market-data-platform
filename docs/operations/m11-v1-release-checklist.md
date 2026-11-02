@@ -42,6 +42,10 @@ not part of the released application and must not be required to follow docs.
       included in the initial audit export.
 - [ ] With Docker available, run `python scripts/validate_compose_health.py`;
       this validates configurations and must not print resolved secrets.
+- [ ] If an **approved isolated local stack is already started**, run
+      `python scripts/verify_deployment_runtime.py --stack all` and record
+      observed status or NOT RUN; follow
+      `docs/operations/m11-deployment-reliability.md`.
 - [ ] Run `python scripts/smoke_dashboard.py` with dashboard dependencies.
 - [ ] Validate the offline Airflow DAG according to
       `docs/operations/offline-smoke-verification.md`.

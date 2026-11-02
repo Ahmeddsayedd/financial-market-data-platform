@@ -15,6 +15,8 @@ an automatically deployed production service.
   current release gaps and follow-up priorities.
 - [M11 v1.0 release gate checklist](docs/operations/m11-v1-release-checklist.md) —
   review and verification steps; not an approval record.
+- [M11 deployment startup verification (#97)](docs/operations/m11-deployment-reliability.md) —
+  read-only container health snapshot and safe opt-in local startup procedure.
 - [Operations index and runbooks](docs/operations/README.md) — start here for
   service startup/shutdown, diagnostics, secrets and backup procedures.
 - [Airflow local setup](docs/airflow-local-setup.md) — local Airflow architecture

@@ -12,6 +12,7 @@ admin password files or raw log content containing secrets.
 | Safely back up and restore in an isolated environment | [Backup and recovery](backup-and-recovery.md) |
 | Airflow-specific local setup | [Airflow local setup](../airflow-local-setup.md) |
 | Compose and service health | [Airflow and Compose health](airflow-compose-health.md) |
+| M11 Docker startup verification (#97) | [Deployment reliability](m11-deployment-reliability.md) |
 | Offline CI smoke checks | [Offline smoke verification](offline-smoke-verification.md) |
 | Correlated JSON diagnostics | [Structured logging](structured-pipeline-logging.md) |
 | Read-only pipeline health states | [Pipeline health assessment](pipeline-health-assessment.md) |
