@@ -11,6 +11,10 @@ an automatically deployed production service.
 
 ## Getting started and operating safely
 
+- [M11 v1.0 readiness audit](docs/operations/m11-v1-release-audit.md) —
+  current release gaps and follow-up priorities.
+- [M11 v1.0 release gate checklist](docs/operations/m11-v1-release-checklist.md) —
+  review and verification steps; not an approval record.
 - [Operations index and runbooks](docs/operations/README.md) — start here for
   service startup/shutdown, diagnostics, secrets and backup procedures.
 - [Airflow local setup](docs/airflow-local-setup.md) — local Airflow architecture
