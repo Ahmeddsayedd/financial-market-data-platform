@@ -17,6 +17,8 @@ admin password files or raw log content containing secrets.
 | Read-only pipeline health states | [Pipeline health assessment](pipeline-health-assessment.md) |
 | M9 scope and outstanding issues | [Implementation plan](m9-implementation-plan.md) |
 | Release artifact verification and manual promotion | [Release readiness](release-readiness.md) |
+| M11 v1.0 evidence-based readiness audit | [M11 release audit](m11-v1-release-audit.md) |
+| M11 v1.0 verification and publication gates | [M11 release checklist](m11-v1-release-checklist.md) |
 | M9 final gate verification and sign-off evidence | [Final M9 verification](m9-final-verification.md) |
 
 ## Boundaries
