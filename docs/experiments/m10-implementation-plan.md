@@ -10,7 +10,7 @@
 | 2 | `experiment: generate deterministic synthetic market-data workloads` (**#83**) | #81 | Seeded, labeled, replayable provider-shaped input; size tiers and malformed-vs-financial-invalid cases, fixture hashes; no provider traffic |
 | 3 | `experiment: implement isolated ETL benchmark runner` (**#85**) | 1–2 | Bounded, opt-in local Raw→Silver benchmark, monotonic stage timings, JSONL attempt schema, warm-ups, failed-attempt capture; temp dirs |
 | 4 | `experiment: evaluate financial data quality and rejection behavior` (**#87**) | 2–3 | Measured record-level rates, code occurrence breakdown, parser failure segregation, expected-vs-observed validity with denominators |
-| 5 | `experiment: evaluate Gold persistence and repeatability` | 2–3 | Operator-approved isolated `financial_market_test` scenarios, inserted/updated/unchanged/rejected counts, logical-state comparison and cleanup review |
+| 5 | `experiment: evaluate Gold persistence and repeatability` (**#89**) | 2–3 | Operator-approved isolated `financial_market_test` scenarios, inserted/updated/unchanged/rejected counts, logical-state comparison and cleanup review |
 | 6 | `experiment: analyze performance, variability and results` | 3–5 | Repeated-run distributions, throughput/time curves, limitations, sanitized result tables/figures; no fabricated benchmark data |
 | 7 | `test(experiment): reproduce and review M10 evaluation evidence` | 1–6 | Independent reproduction instructions and cross-checks, all Python tests and seven CI gates; final limitations and milestone sign-off |
 
@@ -44,3 +44,7 @@ verified synthetic manifest expectations with actual benchmark JSONL outcomes,
 including record-level counts, per-rule violation occurrences and explicitly
 expected parser failures. It is an offline evidence consistency check, not a
 new ETL runner or independent real-market accuracy study.
+
+## Issue #89 implementation
+
+The [rollback-only Gold repeatability evaluation](gold-repeatability.md) exercises insert, exact replay, newer update, stale replay, and equal-timestamp conflict against the approved isolated test database without committing experiment rows. It is not a committed durability benchmark.
