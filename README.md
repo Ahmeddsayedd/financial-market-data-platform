@@ -61,3 +61,13 @@ The full test runner uses the local `.env` and expects isolated test databases f
 PostgreSQL integration tests. Never upload, commit or paste `.env` or credentials.
 GitHub Actions additionally validates Airflow/Streamlit offline smoke checks and
 Docker Compose configuration.
+
+
+### Financial analytics methodology (Issue #101)
+
+The Gold warehouse now calculates and persists period and log returns,
+SMA 7/20/30/50, annualized 20-session historical volatility, Wilder RSI 14,
+running-peak drawdown, and a 20-session volume z-score. Incomplete rolling
+windows remain NULL. See [indicator definitions](docs/financial-indicator-definitions.md)
+for precise conventions and the isolated verification procedure. Live Twelve
+Data ingestion remains disabled by default and is **not** part of this change.

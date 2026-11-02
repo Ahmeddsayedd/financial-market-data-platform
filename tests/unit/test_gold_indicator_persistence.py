@@ -71,6 +71,7 @@ def test_update_gold_indicators_updates_existing_fact():
         Decimal("2.00"),
         Decimal("101.50"),
         None,
+        *([None] * 8),
         42,
         20261009,
         record.extracted_at,
@@ -78,6 +79,7 @@ def test_update_gold_indicators_updates_existing_fact():
         Decimal("2.00"),
         Decimal("101.50"),
         None,
+        *([None] * 8),
     )
 
 

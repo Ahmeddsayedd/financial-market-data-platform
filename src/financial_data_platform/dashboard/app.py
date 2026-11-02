@@ -21,6 +21,7 @@ from financial_data_platform.dashboard.indicator_charts import (
     make_price_sma_chart,
     make_price_change_chart,
     make_daily_return_chart,
+    make_advanced_indicator_charts,
 )
 from financial_data_platform.dashboard.market_charts import (
     make_candlestick_chart,
@@ -223,6 +224,12 @@ def render_indicator_charts(st) -> None:
     st.plotly_chart(
         make_daily_return_chart(observations, symbol), use_container_width=True
     )
+    st.caption(
+        "Additional indicators use complete per-asset history for warm-up periods. "
+        "RSI follows Wilder smoothing; volatility is annualized using 252 sessions."
+    )
+    for chart in make_advanced_indicator_charts(observations, symbol):
+        st.plotly_chart(chart, use_container_width=True)
 
 
 def render_pipeline_monitoring(st) -> None:

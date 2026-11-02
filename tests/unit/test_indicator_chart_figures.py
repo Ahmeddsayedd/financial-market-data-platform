@@ -12,6 +12,7 @@ from financial_data_platform.dashboard.indicator_charts import (
     make_price_sma_chart,
     make_price_change_chart,
     make_daily_return_chart,
+    make_advanced_indicator_charts,
 )
 
 
@@ -95,3 +96,26 @@ def test_return_chart_uses_persisted_percentage_not_fraction():
     assert go.Bar.call_args.kwargs["y"] == [None, 2.5]
     assert go.Bar.call_args.kwargs["name"] == "Daily return (%)"
     assert fig.update_layout.call_args.kwargs["yaxis_title"] == "Return (%)"
+
+
+def test_advanced_charts_use_persisted_values_and_nulls():
+    rows = [
+        observation(date(2026, 10, 8)),
+        observation(
+            date(2026, 10, 9),
+            sma_20=Decimal("101"),
+            rsi_14=Decimal("50"),
+            volume_zscore=Decimal("0"),
+        ),
+    ]
+    for go in fake_plotly():
+        figures = make_advanced_indicator_charts(rows, "AAPL")
+    assert len(figures) == 6
+    assert [call.kwargs["name"] for call in go.Scatter.call_args_list[:3]] == [
+        "Close",
+        "SMA 20",
+        "SMA 50",
+    ]
+    assert go.Scatter.call_args_list[1].kwargs["y"] == [None, 101.0]
+    assert go.Scatter.call_args_list[3].kwargs["y"] == [None, 50.0]
+    assert go.Scatter.call_args_list[6].kwargs["y"] == [None, 0.0]

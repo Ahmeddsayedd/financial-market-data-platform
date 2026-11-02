@@ -38,4 +38,12 @@ def test_to_gold_indicator_values():
         "daily_return_pct": Decimal("2.00"),
         "sma_7": Decimal("101.50"),
         "sma_30": None,
+        "period_return": None,
+        "log_return": None,
+        "sma_20": None,
+        "sma_50": None,
+        "rolling_volatility_20d": None,
+        "rsi_14": None,
+        "drawdown": None,
+        "volume_zscore": None,
     }

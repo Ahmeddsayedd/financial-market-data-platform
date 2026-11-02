@@ -35,3 +35,5 @@ admin password files or raw log content containing secrets.
   provisioned by this repository.
 - These documents neither execute restore/rotation commands nor enable live
   ingestion, loading, or DAG scheduling.
+
+- [Issue #101 analytics verification and traceability](issue-101-analytics-verification.md)
