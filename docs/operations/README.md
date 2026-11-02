@@ -20,6 +20,8 @@ admin password files or raw log content containing secrets.
 | Release artifact verification and manual promotion | [Release readiness](release-readiness.md) |
 | M11 v1.0 evidence-based readiness audit | [M11 release audit](m11-v1-release-audit.md) |
 | M11 v1.0 verification and publication gates | [M11 release checklist](m11-v1-release-checklist.md) |
+| Issue #99 release candidate verification record | [M11 v1 release evidence](m11-v1-release-evidence.md) |
+| Proposed v1.0.0 notes and known limitations | [v1.0.0 draft release notes](v1.0.0-release-notes.md) |
 | M9 final gate verification and sign-off evidence | [Final M9 verification](m9-final-verification.md) |
 
 ## Boundaries

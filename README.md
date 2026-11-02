@@ -9,6 +9,28 @@ writes through Airflow are restricted to the isolated `financial_market_test`
 database. The DAG is paused on creation. This is a local development platform, not
 an automatically deployed production service.
 
+## Portfolio v1.0 candidate
+
+This repository demonstrates financial-market ingestion and validation, a PostgreSQL
+analytics warehouse, scheduled Airflow orchestration and a read-only four-page
+Streamlit dashboard. It is a **local portfolio project**, not a hosted service or
+production trading system. Financial provider access and Gold writes are off by
+default; the DAG starts paused.
+
+A reviewer can follow the [dashboard local setup](docs/dashboard-local-setup.md)
+for the read-only UI, the [offline smoke guide](docs/operations/offline-smoke-verification.md)
+for safe validation without API credentials, and the [M10 experiment closeout](docs/experiments/m10-reproducibility-closeout.md)
+for reproducibility evidence. Actual populated-data demonstrations require an
+approved isolated test database and locally configured credentials; no private
+data is bundled. Runtime timings depend on the host machine.
+
+Version `1.0.0` is prepared as a release candidate only; **no Git tag, GitHub
+Release, registry upload or production deployment is implied**. Consult the
+[v1.0.0 draft release notes](docs/operations/v1.0.0-release-notes.md) and
+[M11 release evidence](docs/operations/m11-v1-release-evidence.md) before any
+publication. Known limitations include range-based dependencies, tag-based base
+images, no verified SBOM/signing, and no hosted environment.
+
 ## Getting started and operating safely
 
 - [M11 v1.0 readiness audit](docs/operations/m11-v1-release-audit.md) —
