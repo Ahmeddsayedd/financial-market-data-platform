@@ -78,3 +78,12 @@ A bounded, opt-in one-request AAPL verification and replay command is documented
 [`docs/operations/issue-103-twelve-data-live-verification.md`](docs/operations/issue-103-twelve-data-live-verification.md).
 It uses the local ignored `.env` and writes evidence to ignored `data/experiments/`;
 Gold writes require explicit isolated `financial_market_test` confirmation.
+
+### Repeatable real-market evidence (Issue #104)
+
+[Issue #104 experiment guide](docs/operations/issue-104-end-to-end-evidence.md)
+collects measured offline Raw-to-Silver replay distributions from the saved
+Issue #103 real AAPL response. An optional read-only audit of
+`financial_market_test` reports persisted Gold counts and indicator coverage.
+This experiment makes no provider requests, performs no Gold writes, and does
+not claim whole-Airflow-DAG performance.
