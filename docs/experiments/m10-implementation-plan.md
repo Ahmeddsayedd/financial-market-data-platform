@@ -48,3 +48,12 @@ new ETL runner or independent real-market accuracy study.
 ## Issue #89 implementation
 
 The [rollback-only Gold repeatability evaluation](gold-repeatability.md) exercises insert, exact replay, newer update, stale replay, and equal-timestamp conflict against the approved isolated test database without committing experiment rows. It is not a committed durability benchmark.
+
+## Issue #6 — Offline performance analysis
+
+The [offline performance analyzer](performance-analysis.md) validates Issue #85
+schema-v1 benchmark JSONL files, summarizes successful measured attempts,
+counts failures separately, and compares compatible synthetic workload tiers.
+It emits reproducible JSON and Markdown reports without rerunning ETL or
+claiming unmeasured per-substage bottlenecks. The GitHub issue number is
+assigned independently and should be recorded after issue creation.
