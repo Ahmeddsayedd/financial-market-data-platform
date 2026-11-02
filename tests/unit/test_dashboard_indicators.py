@@ -167,6 +167,9 @@ def test_indicators_communicate_all_missing_indicators_but_keep_close_chart():
         patch.object(app, "make_price_sma_chart", return_value="sma"),
         patch.object(app, "make_price_change_chart", return_value="change"),
         patch.object(app, "make_daily_return_chart", return_value="return"),
+        patch.object(
+            app, "make_advanced_indicator_charts", return_value=["advanced"] * 6
+        ),
     ):
         app.render_indicator_charts(st)
     st.info.assert_called_once()
@@ -203,6 +206,9 @@ def test_indicators_warn_at_5000_row_boundary():
         patch.object(app, "make_price_sma_chart", return_value="sma"),
         patch.object(app, "make_price_change_chart", return_value="change"),
         patch.object(app, "make_daily_return_chart", return_value="return"),
+        patch.object(
+            app, "make_advanced_indicator_charts", return_value=["advanced"] * 6
+        ),
     ):
         app.render_indicator_charts(st)
     assert "5,000" in st.warning.call_args.args[0]
