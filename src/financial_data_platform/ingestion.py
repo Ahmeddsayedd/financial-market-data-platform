@@ -11,9 +11,14 @@ def ingest_daily_market_data(
     client: TwelveDataClient,
     raw_writer: RawResponseWriter,
     extracted_at: datetime,
+    outputsize: int | None = None,
 ) -> Path:
     """Fetch daily market data and preserve the provider response in raw storage."""
-    payload = client.fetch_daily_time_series(symbol)
+    payload = (
+        client.fetch_daily_time_series(symbol)
+        if outputsize is None
+        else client.fetch_daily_time_series(symbol, outputsize=outputsize)
+    )
 
     raw_path = raw_writer.write(
         payload,

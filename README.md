@@ -71,3 +71,10 @@ running-peak drawdown, and a 20-session volume z-score. Incomplete rolling
 windows remain NULL. See [indicator definitions](docs/financial-indicator-definitions.md)
 for precise conventions and the isolated verification procedure. Live Twelve
 Data ingestion remains disabled by default and is **not** part of this change.
+
+### Controlled Twelve Data verification (Issue #103)
+
+A bounded, opt-in one-request AAPL verification and replay command is documented in
+[`docs/operations/issue-103-twelve-data-live-verification.md`](docs/operations/issue-103-twelve-data-live-verification.md).
+It uses the local ignored `.env` and writes evidence to ignored `data/experiments/`;
+Gold writes require explicit isolated `financial_market_test` confirmation.
