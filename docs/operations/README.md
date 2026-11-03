@@ -43,3 +43,5 @@ admin password files or raw log content containing secrets.
 - [Issue #104: reproducible real-data replay and read-only Gold evidence](issue-104-end-to-end-evidence.md)
 
 - [Read-only Airflow and populated dashboard demonstration evidence](airflow-end-to-end-demonstration.md)
+
+- [Controlled real-data Airflow execution](controlled-airflow-real-data-execution.md) — opt-in captured-Raw replay, isolated Gold and indicator writes, restoration

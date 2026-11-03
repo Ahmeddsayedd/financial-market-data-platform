@@ -91,3 +91,5 @@ not claim whole-Airflow-DAG performance.
 For a run-specific, read-only evidence collection procedure covering local Airflow
 tracking, existing Gold indicators, and populated dashboard review, see
 [`docs/operations/airflow-end-to-end-demonstration.md`](docs/operations/airflow-end-to-end-demonstration.md).
+
+For the opt-in, test-only complete Airflow Raw → Silver → Gold replay using captured Twelve Data input, see [controlled Airflow real-data execution](docs/operations/controlled-airflow-real-data-execution.md).
