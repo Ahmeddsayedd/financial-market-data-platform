@@ -45,3 +45,5 @@ admin password files or raw log content containing secrets.
 - [Read-only Airflow and populated dashboard demonstration evidence](airflow-end-to-end-demonstration.md)
 
 - [Controlled real-data Airflow execution](controlled-airflow-real-data-execution.md) — opt-in captured-Raw replay, isolated Gold and indicator writes, restoration
+
+- [Final thesis real-data evaluation and limitations](../experiments/final-thesis-evaluation.md)
