@@ -296,3 +296,55 @@ def test_replaying_raw_file_does_not_duplicate_gold_facts(
 
     assert first_silver["quality_report"] == (second_silver["quality_report"])
     assert len(read_gold_facts(symbol)) == 2
+
+
+def test_atomic_indicators_replay_in_isolated_gold(tmp_path, isolated_asset):
+    """Real DAG Gold path writes indicators atomically and preserves replay values."""
+    symbol = isolated_asset
+    values = [
+        observation("2026-10-21", close="102.00"),
+        observation("2026-10-22", close="103.00"),
+    ]
+    silver, silver_root = run_raw_to_silver(tmp_path, symbol, values)
+    relative_paths = [
+        Path(filename).relative_to(silver_root).as_posix()
+        for filename in silver["silver_paths"]
+    ]
+
+    first = load_silver_paths_to_gold(
+        relative_paths=relative_paths,
+        silver_base_dir=silver_root,
+        include_indicators=True,
+    )
+    second = load_silver_paths_to_gold(
+        relative_paths=relative_paths,
+        silver_base_dir=silver_root,
+        include_indicators=True,
+    )
+
+    assert first["inserted"] == 2
+    assert first["indicator_counts"]["updated"] == 2
+    assert second["inserted"] == 0
+    assert second["updated"] == 0
+    assert second["unchanged"] == 2
+    assert second["indicator_counts"] == {"updated": 0, "unchanged": 2}
+
+    with connect_to_database() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT current_database()")
+            assert cursor.fetchone()[0] == TEST_DATABASE
+            cursor.execute(
+                """
+                SELECT f.drawdown, f.price_change
+                FROM fact_market_metrics AS f
+                JOIN dim_asset AS a ON f.asset_key = a.asset_key
+                JOIN dim_date AS d ON f.date_key = d.date_key
+                WHERE a.source = %s AND a.symbol = %s
+                ORDER BY d.full_date
+                """,
+                (TEST_SOURCE, symbol),
+            )
+            rows = cursor.fetchall()
+    assert len(rows) == 2
+    assert rows[0][0] == Decimal("0.00000000")
+    assert rows[1][1] == Decimal("1.00000000")

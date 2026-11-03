@@ -329,6 +329,7 @@ def load_silver_to_gold(
     result = load_silver_paths_to_gold(
         relative_paths=selected_paths,
         silver_base_dir=silver_root,
+        include_indicators=True,
     )
 
     from financial_data_platform.orchestration.execution_tracking import (

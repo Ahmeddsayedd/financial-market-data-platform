@@ -169,3 +169,56 @@ def test_empty_parquet_records_do_not_open_database(tmp_path):
             )
 
     loader.assert_not_called()
+
+
+def test_atomic_indicator_mode_preflights_isolated_database(tmp_path):
+    root, relative_path = create_silver_file(tmp_path)
+    sample = [object()]
+    with (
+        patch(
+            "financial_data_platform.orchestration.gold.read_silver_parquet",
+            return_value=sample,
+        ),
+        patch(
+            "financial_data_platform.experiments.live_market_verification.require_isolated_database"
+        ) as preflight,
+        patch(
+            "financial_data_platform.warehouse.gold_indicator_persistence.load_market_records_with_indicators",
+            return_value={
+                "market": {"inserted": 1, "updated": 0, "unchanged": 0, "rejected": 0},
+                "indicators": {"updated": 1, "unchanged": 0},
+            },
+        ) as loader,
+    ):
+        result = load_silver_paths_to_gold(
+            relative_paths=[relative_path],
+            silver_base_dir=root,
+            include_indicators=True,
+        )
+    preflight.assert_called_once_with(confirmation="financial_market_test")
+    loader.assert_called_once_with(sample)
+    assert result["indicator_counts"] == {"updated": 1, "unchanged": 0}
+
+
+def test_atomic_indicator_mode_refuses_wrong_database(tmp_path):
+    root, relative_path = create_silver_file(tmp_path)
+    with (
+        patch(
+            "financial_data_platform.orchestration.gold.read_silver_parquet",
+            return_value=[object()],
+        ),
+        patch(
+            "financial_data_platform.experiments.live_market_verification.require_isolated_database",
+            side_effect=ValueError("Connected database is not financial_market_test"),
+        ),
+        patch(
+            "financial_data_platform.warehouse.gold_indicator_persistence.load_market_records_with_indicators"
+        ) as loader,
+    ):
+        with pytest.raises(ValueError, match="not financial_market_test"):
+            load_silver_paths_to_gold(
+                relative_paths=[relative_path],
+                silver_base_dir=root,
+                include_indicators=True,
+            )
+    loader.assert_not_called()

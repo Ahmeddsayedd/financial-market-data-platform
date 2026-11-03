@@ -16,6 +16,7 @@ def load_silver_paths_to_gold(
     *,
     relative_paths: Sequence[str],
     silver_base_dir: Path,
+    include_indicators: bool = False,
 ) -> dict[str, object]:
     """Load selected Silver partitions into Gold as one transaction."""
 
@@ -63,7 +64,23 @@ def load_silver_paths_to_gold(
         raise ValueError("Selected Silver files contain no records")
 
     # The existing loader manages commit, rollback, and cleanup.
-    counts = load_market_records(records)
+    if include_indicators:
+        # An environment variable alone is insufficient to authorize a write.
+        # Confirm the server-side database name before opening the load transaction.
+        from financial_data_platform.experiments.live_market_verification import (
+            require_isolated_database,
+        )
+        from financial_data_platform.warehouse.gold_indicator_persistence import (
+            load_market_records_with_indicators,
+        )
+
+        require_isolated_database(confirmation="financial_market_test")
+        result = load_market_records_with_indicators(records)
+        counts = result["market"]
+        indicator_counts = result["indicators"]
+    else:
+        counts = load_market_records(records)
+        indicator_counts = None
 
     log_event(
         "gold",
@@ -86,4 +103,5 @@ def load_silver_paths_to_gold(
         "unchanged": counts["unchanged"],
         "rejected": counts["rejected"],
         "silver_paths": [str(path) for path in resolved_paths],
+        "indicator_counts": indicator_counts,
     }
